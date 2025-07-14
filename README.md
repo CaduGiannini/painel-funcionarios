@@ -1,813 +1,214 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <title>Organograma Interativo - Painel de Funcionários</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background: #f1f1f1;
-            margin: 0;
-            padding: 0;
-        }
-        .container {
-            max-width: 1200px;
-            margin: 30px auto;
-            background: #fff;
-            border-radius: 10px;
-            box-shadow: 0 0 20px #0002;
-            padding: 32px;
-        }
-        .actions, .main-title {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 16px;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-        .main-title h1, .main-title p {
-            margin: 0;
-            cursor: pointer;
-        }
-        .employee-list, .departments {
-            display: flex;
-            gap: 16px;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-        .employee-pool, .department {
-            background: #f9f9f9;
-            border: 2px dashed #ddd;
-            min-width: 210px;
-            min-height: 120px;
-            border-radius: 8px;
-            padding: 12px;
-            margin-bottom: 20px;
-            box-sizing: border-box;
-            transition: all 0.3s ease;
-        }
-        .employee-pool {
-            flex: 1;
-        }
-        .department {
-            flex: 1;
-            position: relative;
-            cursor: move;
-        }
-        .department.dragging {
-            opacity: 0.5;
-            transform: rotate(5deg);
-        }
-        .department-title {
-            font-weight: bold;
-            margin-bottom: 6px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            cursor: pointer;
-        }
-        .remove-btn {
-            background: #e74c3c;
-            border: none;
-            color: #fff;
-            border-radius: 50%;
-            width: 22px; 
-            height: 22px;
-            font-size: 13px;
-            cursor: pointer;
-            margin-left: 4px;
-            transition: background 0.3s ease;
-        }
-        .remove-btn:hover {
-            background: #c0392b;
-        }
-        .edit-btn {
-            background: #3498db;
-            border: none;
-            color: #fff;
-            border-radius: 50%;
-            width: 22px; 
-            height: 22px;
-            font-size: 12px;
-            cursor: pointer;
-            margin-left: 4px;
-            transition: background 0.3s ease;
-        }
-        .edit-btn:hover {
-            background: #2980b9;
-        }
-        .employee {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border-radius: 6px;
-            padding: 8px 12px;
-            margin: 6px 0;
-            cursor: grab;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 8px;
-            box-shadow: 0 2px 5px #0001;
-            transition: transform 0.2s ease;
-        }
-        .employee:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px #0002;
-        }
-        .employee.dragging {
-            opacity: 0.5;
-            transform: rotate(5deg);
-        }
-        .employee span {
-            pointer-events: none;
-        }
-        .employee .remove-btn {
-            margin-left: 8px;
-            background: #c0392b;
-        }
-        .add-form input, .add-form select {
-            padding: 5px 8px;
-            margin-right: 8px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-        }
-        .btn {
-            background: #667eea;
-            color: #fff;
-            border: none;
-            padding: 7px 14px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: background 0.3s ease;
-        }
-        .btn:hover {
-            background: #5a67d8;
-        }
-        .drop-hover {
-            background: #e0e7ff !important;
-            border-color: #667eea !important;
-            transform: scale(1.02);
-        }
+# Organograma Interativo React
 
-        /* Modal Styles */
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.5);
-            animation: fadeIn 0.3s ease;
-        }
-        .modal.show {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .modal-content {
-            background-color: #fff;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            width: 90%;
-            max-width: 500px;
-            animation: slideIn 0.3s ease;
-        }
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            border-bottom: 2px solid #f1f1f1;
-            padding-bottom: 10px;
-        }
-        .modal-header h2 {
-            margin: 0;
-            color: #333;
-        }
-        .close {
-            color: #aaa;
-            font-size: 28px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: color 0.3s ease;
-        }
-        .close:hover {
-            color: #000;
-        }
-        .form-group {
-            margin-bottom: 15px;
-        }
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-            color: #555;
-        }
-        .form-group input, .form-group select, .form-group textarea {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            box-sizing: border-box;
-            font-size: 14px;
-        }
-        .form-group textarea {
-            resize: vertical;
-            min-height: 80px;
-        }
-        .modal-actions {
-            display: flex;
-            gap: 10px;
-            justify-content: flex-end;
-            margin-top: 20px;
-        }
-        .btn-secondary {
-            background: #6c757d;
-            color: #fff;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: background 0.3s ease;
-        }
-        .btn-secondary:hover {
-            background: #5a6268;
-        }
+Sistema de organograma interativo desenvolvido em React com sincronização em tempo real via Firebase. Permite gerenciar funcionários e departamentos com funcionalidade de drag & drop.
 
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        @keyframes slideIn {
-            from { transform: translateY(-50px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
+## 🚀 Funcionalidades
 
-        /* Responsive Design */
-        @media (max-width: 768px) {
-            .container {
-                margin: 10px;
-                padding: 20px;
-            }
-            .actions {
-                flex-direction: column;
-                align-items: stretch;
-            }
-            .add-form {
-                flex-direction: column;
-                gap: 10px;
-            }
-            .add-form input, .add-form select {
-                margin-right: 0;
-            }
-            .employee-list, .departments {
-                flex-direction: column;
-            }
-            .modal-content {
-                margin: 20px;
-                width: calc(100% - 40px);
-            }
-        }
-    </style>
-</head>
-<body>
-<div class="container">
-    <div class="actions">
-        <form class="add-form" id="addEmployeeForm" style="display:flex;align-items:center;gap:8px;">
-            <input type="text" id="employeeName" placeholder="Nome do Funcionário" required>
-            <input type="text" id="employeeRole" placeholder="Cargo" required>
-            <select id="employeeDept">
-                <option value="">Pool</option>
-            </select>
-            <button class="btn" type="submit">Adicionar</button>
-        </form>
-        <button class="btn" onclick="addDepartment()">➕ Departamento</button>
-        <button class="btn" onclick="resetAll()">🔄 Resetar</button>
-        <button class="btn" onclick="exportData()">💾 Exportar</button>
-    </div>
-    <div class="main-title">
-        <h1 id="mainTitle" onclick="editTitle('mainTitle')">🏢 Painel de Funcionários</h1>
-        <p id="subtitle" onclick="editTitle('subtitle')" style="margin-left:18px; font-size:1.05em;">
-            Arraste e solte os funcionários nos departamentos
-        </p>
-    </div>
-    <div class="employee-list">
-        <div class="employee-pool" id="employeePool" ondrop="onDrop(event, null)" ondragover="onDragOver(event)" ondragleave="onDragLeave(event)">
-            <div style="margin-bottom:8px;font-weight:bold;">Funcionários sem departamento</div>
-        </div>
-        <div class="departments" id="departments"></div>
-    </div>
-</div>
+- ✅ Adicionar, editar e remover funcionários
+- ✅ Criar, editar e remover departamentos
+- ✅ Arrastar e soltar funcionários entre departamentos
+- ✅ Sincronização em tempo real com Firebase
+- ✅ Interface responsiva e intuitiva
+- ✅ Edição inline de títulos
+- ✅ Exportação de dados em JSON
+- ✅ Sistema de cores personalizáveis para departamentos
+- ✅ Status de conexão em tempo real
 
-<!-- Modal para Edição de Funcionário -->
-<div id="employeeModal" class="modal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h2>Editar Funcionário</h2>
-            <span class="close" onclick="closeModal('employeeModal')">&times;</span>
-        </div>
-        <form id="editEmployeeForm">
-            <div class="form-group">
-                <label for="editEmployeeName">Nome:</label>
-                <input type="text" id="editEmployeeName" required>
-            </div>
-            <div class="form-group">
-                <label for="editEmployeeRole">Cargo:</label>
-                <input type="text" id="editEmployeeRole" required>
-            </div>
-            <div class="form-group">
-                <label for="editEmployeeEmail">Email:</label>
-                <input type="email" id="editEmployeeEmail">
-            </div>
-            <div class="form-group">
-                <label for="editEmployeePhone">Telefone:</label>
-                <input type="tel" id="editEmployeePhone">
-            </div>
-            <div class="form-group">
-                <label for="editEmployeeNotes">Observações:</label>
-                <textarea id="editEmployeeNotes" placeholder="Informações adicionais sobre o funcionário"></textarea>
-            </div>
-            <div class="form-group">
-                <label for="editEmployeeDept">Departamento:</label>
-                <select id="editEmployeeDept">
-                    <option value="">Pool</option>
-                </select>
-            </div>
-            <div class="modal-actions">
-                <button type="button" class="btn-secondary" onclick="closeModal('employeeModal')">Cancelar</button>
-                <button type="submit" class="btn">Salvar</button>
-            </div>
-        </form>
-    </div>
-</div>
+## 📋 Pré-requisitos
 
-<!-- Modal para Edição de Departamento -->
-<div id="departmentModal" class="modal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h2>Editar Departamento</h2>
-            <span class="close" onclick="closeModal('departmentModal')">&times;</span>
-        </div>
-        <form id="editDepartmentForm">
-            <div class="form-group">
-                <label for="editDepartmentName">Nome do Departamento:</label>
-                <input type="text" id="editDepartmentName" required>
-            </div>
-            <div class="form-group">
-                <label for="editDepartmentManager">Gerente:</label>
-                <input type="text" id="editDepartmentManager">
-            </div>
-            <div class="form-group">
-                <label for="editDepartmentDescription">Descrição:</label>
-                <textarea id="editDepartmentDescription" placeholder="Descrição do departamento e suas responsabilidades"></textarea>
-            </div>
-            <div class="form-group">
-                <label for="editDepartmentColor">Cor do Departamento:</label>
-                <input type="color" id="editDepartmentColor" value="#667eea">
-            </div>
-            <div class="modal-actions">
-                <button type="button" class="btn-secondary" onclick="closeModal('departmentModal')">Cancelar</button>
-                <button type="submit" class="btn">Salvar</button>
-            </div>
-        </form>
-    </div>
-</div>
+- Node.js (versão 14 ou superior)
+- npm ou yarn
+- Conta no Firebase
 
-<script>
-/* CONFIGURAÇÃO DO SEU FIREBASE */
+## 🔧 Instalação
+
+1. Clone o repositório:
+```bash
+git clone <url-do-repositorio>
+cd organograma-react
+```
+
+2. Instale as dependências:
+```bash
+npm install
+```
+
+3. Configure o Firebase:
+   - Acesse [Firebase Console](https://console.firebase.google.com/)
+   - Crie um novo projeto ou use um existente
+   - Ative o Realtime Database
+   - Copie as configurações do projeto
+
+4. Configure as credenciais do Firebase:
+   - Abra o arquivo `src/firebase.js`
+   - Substitua as configurações pelo seu projeto Firebase:
+
+```javascript
 const firebaseConfig = {
-    apiKey: "AIzaSyCurdZZRC1_vxgvTvHAJg-M_fRLW14-n8A",
-    authDomain: "organograma-c9d08.firebaseapp.com",
-    databaseURL: "https://organograma-c9d08.firebaseio.com",
-    projectId: "organograma-c9d08",
-    storageBucket: "organograma-c9d08.appspot.com",
-    messagingSenderId: "43858988878",
-    appId: "1:43858988878:web:abc123def456"
+  apiKey: "sua-api-key",
+  authDomain: "seu-projeto.firebaseapp.com",
+  databaseURL: "https://seu-projeto-default-rtdb.firebaseio.com/",
+  projectId: "seu-projeto",
+  storageBucket: "seu-projeto.appspot.com",
+  messagingSenderId: "123456789",
+  appId: "1:123456789:web:abcdef123456"
 };
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-const dataPath = 'painelFuncionarios';
+```
 
-let data = {
-    title: '🏢 Painel de Funcionários',
-    subtitle: 'Arraste e solte os funcionários nos departamentos',
-    employeeCounter: 0,
-    employees: [],
-    departments: []
-};
+5. Configure as regras do Realtime Database:
 
-let isSaving = false;
-let currentEditingEmployee = null;
-let currentEditingDepartment = null;
-let draggedElement = null;
-let draggedType = null; // 'employee' ou 'department'
-
-// Carregar e escutar mudanças em tempo real
-db.ref(dataPath).on('value', snap => {
-    if (snap.exists()) {
-        data = snap.val();
-        // Garantir que arrays existam
-        if (!data.employees) data.employees = [];
-        if (!data.departments) data.departments = [];
-        refreshAll();
-    }
-});
-
-function saveData() {
-    if (isSaving) return;
-    isSaving = true;
-    db.ref(dataPath).set(data, () => {
-        isSaving = false;
-    });
+Para **desenvolvimento/teste** (INSEGURO - apenas para testes):
+```json
+{
+  "rules": {
+    ".read": true,
+    ".write": true
+  }
 }
+```
 
-function refreshAll() {
-    document.getElementById('mainTitle').textContent = data.title;
-    document.getElementById('subtitle').textContent = data.subtitle;
-    
-    // Lista de departamentos no select
-    const deptSelects = ['employeeDept', 'editEmployeeDept'];
-    deptSelects.forEach(selectId => {
-        const deptSelect = document.getElementById(selectId);
-        deptSelect.innerHTML = '<option value="">Pool</option>';
-        if (data.departments && data.departments.length > 0) {
-            data.departments.forEach(dep => {
-                const opt = document.createElement('option');
-                opt.value = dep.id;
-                opt.textContent = dep.name;
-                deptSelect.appendChild(opt);
-            });
-        }
-    });
-    
-    // Funcionários sem departamento
-    const poolDiv = document.getElementById('employeePool');
-    poolDiv.querySelectorAll('.employee').forEach(e=>e.remove());
-    if (data.employees && data.employees.length > 0) {
-        data.employees.filter(e => !e.dept).forEach(emp => poolDiv.appendChild(renderEmployee(emp)));
-    }
-    
-    // Departamentos
-    const deptsDiv = document.getElementById('departments');
-    deptsDiv.innerHTML = '';
-    if (data.departments && data.departments.length > 0) {
-        data.departments.forEach(dep => {
-            const deptDiv = document.createElement('div');
-            deptDiv.className = 'department';
-            deptDiv.draggable = true;
-            deptDiv.dataset.id = dep.id;
-            deptDiv.ondrop = e => onDrop(e, dep.id);
-            deptDiv.ondragover = onDragOver;
-            deptDiv.ondragleave = onDragLeave;
-            deptDiv.ondragstart = e => departmentDragStart(e, dep.id);
-            deptDiv.ondragend = departmentDragEnd;
-            
-            // Aplicar cor personalizada se existir
-            if (dep.color) {
-                deptDiv.style.borderColor = dep.color;
-                deptDiv.style.background = `linear-gradient(135deg, ${dep.color}15, ${dep.color}05)`;
-            }
-            
-            // Título editável
-            const titleDiv = document.createElement('div');
-            titleDiv.className = 'department-title';
-            titleDiv.innerHTML = `
-                <span ondblclick="editDeptTitle('${dep.id}')">${dep.name}</span>
-                <button class='edit-btn' onclick="openDepartmentModal('${dep.id}')" title="Editar departamento">✏️</button>
-                <button class='remove-btn' onclick="removeDepartment('${dep.id}')" title="Remover departamento">✖</button>
-            `;
-            deptDiv.appendChild(titleDiv);
-            
-            // Mostrar gerente se existir
-            if (dep.manager) {
-                const managerDiv = document.createElement('div');
-                managerDiv.style.fontSize = '0.9em';
-                managerDiv.style.color = '#666';
-                managerDiv.style.marginBottom = '8px';
-                managerDiv.textContent = `Gerente: ${dep.manager}`;
-                deptDiv.appendChild(managerDiv);
-            }
-            
-            // Funcionários
-            if (data.employees && data.employees.length > 0) {
-                data.employees.filter(e => e.dept === dep.id).forEach(emp => deptDiv.appendChild(renderEmployee(emp)));
-            }
-            deptsDiv.appendChild(deptDiv);
-        });
-    }
+Para **produção** (mais seguro):
+```json
+{
+  "rules": {
+    ".read": "auth != null",
+    ".write": "auth != null"
+  }
 }
+```
 
-function renderEmployee(emp) {
-    const div = document.createElement('div');
-    div.className = 'employee';
-    div.draggable = true;
-    div.dataset.id = emp.id;
-    
-    // Aplicar cor do departamento se existir
-    const dept = data.departments ? data.departments.find(d => d.id === emp.dept) : null;
-    if (dept && dept.color) {
-        div.style.background = `linear-gradient(135deg, ${dept.color} 0%, ${dept.color}CC 100%)`;
-    }
-    
-    div.innerHTML = `
-        <div>
-            <div style="font-weight: bold;">${emp.name}</div>
-            <div style="opacity:.75;font-size:0.85em;">${emp.role}</div>
-        </div>
-        <div>
-            <button class="edit-btn" onclick="openEmployeeModal('${emp.id}')" title="Editar funcionário">✏️</button>
-            <button class="remove-btn" onclick="removeEmployee('${emp.id}')" title="Remover funcionário">✖</button>
-        </div>
-    `;
-    div.ondragstart = e => employeeDragStart(e, emp.id);
-    div.ondragend = employeeDragEnd;
-    return div;
-}
+## 🚀 Executando o projeto
 
-// Modal Functions
-function openEmployeeModal(empId) {
-    currentEditingEmployee = data.employees.find(e => e.id == empId);
-    if (!currentEditingEmployee) return;
-    
-    document.getElementById('editEmployeeName').value = currentEditingEmployee.name || '';
-    document.getElementById('editEmployeeRole').value = currentEditingEmployee.role || '';
-    document.getElementById('editEmployeeEmail').value = currentEditingEmployee.email || '';
-    document.getElementById('editEmployeePhone').value = currentEditingEmployee.phone || '';
-    document.getElementById('editEmployeeNotes').value = currentEditingEmployee.notes || '';
-    document.getElementById('editEmployeeDept').value = currentEditingEmployee.dept || '';
-    
-    showModal('employeeModal');
-}
+```bash
+npm start
+```
 
-function openDepartmentModal(deptId) {
-    currentEditingDepartment = data.departments.find(d => d.id === deptId);
-    if (!currentEditingDepartment) return;
-    
-    document.getElementById('editDepartmentName').value = currentEditingDepartment.name || '';
-    document.getElementById('editDepartmentManager').value = currentEditingDepartment.manager || '';
-    document.getElementById('editDepartmentDescription').value = currentEditingDepartment.description || '';
-    document.getElementById('editDepartmentColor').value = currentEditingDepartment.color || '#667eea';
-    
-    showModal('departmentModal');
-}
+O aplicativo será aberto em [http://localhost:3000](http://localhost:3000).
 
-function showModal(modalId) {
-    document.getElementById(modalId).classList.add('show');
-    document.body.style.overflow = 'hidden';
-}
+## 📱 Como usar
 
-function closeModal(modalId) {
-    document.getElementById(modalId).classList.remove('show');
-    document.body.style.overflow = 'auto';
-    currentEditingEmployee = null;
-    currentEditingDepartment = null;
-}
+### Adicionando Funcionários
+1. Preencha o nome e cargo no formulário
+2. Opcionalmente selecione um departamento
+3. Clique em "Adicionar"
 
-// Form Handlers
-document.getElementById('editEmployeeForm').onsubmit = function(e) {
-    e.preventDefault();
-    if (!currentEditingEmployee) return;
-    
-    currentEditingEmployee.name = document.getElementById('editEmployeeName').value.trim();
-    currentEditingEmployee.role = document.getElementById('editEmployeeRole').value.trim();
-    currentEditingEmployee.email = document.getElementById('editEmployeeEmail').value.trim();
-    currentEditingEmployee.phone = document.getElementById('editEmployeePhone').value.trim();
-    currentEditingEmployee.notes = document.getElementById('editEmployeeNotes').value.trim();
-    currentEditingEmployee.dept = document.getElementById('editEmployeeDept').value || null;
-    
-    saveData();
-    refreshAll();
-    closeModal('employeeModal');
-};
+### Gerenciando Departamentos
+1. Clique em "➕ Departamento" para criar um novo
+2. Use o botão ✏️ para editar informações detalhadas
+3. Use o botão ✖ para remover (funcionários voltam para o pool)
 
-document.getElementById('editDepartmentForm').onsubmit = function(e) {
-    e.preventDefault();
-    if (!currentEditingDepartment) return;
-    
-    currentEditingDepartment.name = document.getElementById('editDepartmentName').value.trim();
-    currentEditingDepartment.manager = document.getElementById('editDepartmentManager').value.trim();
-    currentEditingDepartment.description = document.getElementById('editDepartmentDescription').value.trim();
-    currentEditingDepartment.color = document.getElementById('editDepartmentColor').value;
-    
-    saveData();
-    refreshAll();
-    closeModal('departmentModal');
-};
+### Drag & Drop
+- Arraste funcionários entre departamentos
+- Arraste funcionários de volta para o pool (sem departamento)
 
-// Edição de título/subtítulo
-function editTitle(id) {
-    const el = document.getElementById(id);
-    const old = el.textContent;
-    const input = document.createElement('input');
-    input.type = 'text';
-    input.value = old;
-    input.style.fontSize = el.style.fontSize || '1.3em';
-    input.onblur = () => {
-        data[id === 'mainTitle' ? 'title' : 'subtitle'] = input.value;
-        saveData(); 
-        refreshAll();
-    };
-    input.onkeydown = e => {
-        if (e.key === 'Enter') input.blur();
-        if (e.key === 'Escape') { input.value = old; input.blur(); }
-    };
-    el.replaceWith(input);
-    input.focus();
-}
+### Edição Avançada
+- Clique no ✏️ ao lado dos funcionários para editar informações completas
+- Clique no ✏️ ao lado dos departamentos para configurar cores e descrições
+- Clique nos títulos principais para editá-los
 
-// Edição rápida de título de departamento (duplo clique)
-function editDeptTitle(id) {
-    const dep = data.departments.find(d => d.id === id);
-    if (!dep) return;
-    const deptsDiv = document.getElementById('departments');
-    const deptDiv = Array.from(deptsDiv.children).find(div =>
-        div.querySelector('.department-title span')?.textContent === dep.name
-    );
-    if (!deptDiv) return;
-    const span = deptDiv.querySelector('.department-title span');
-    const input = document.createElement('input');
-    input.type = 'text';
-    input.value = dep.name;
-    input.style.fontSize = '1em';
-    input.onblur = () => {
-        dep.name = input.value || 'Departamento';
-        saveData(); 
-        refreshAll();
-    };
-    input.onkeydown = e => {
-        if (e.key === 'Enter') input.blur();
-        if (e.key === 'Escape') { input.value = dep.name; input.blur(); }
-    };
-    span.replaceWith(input);
-    input.focus();
-}
+### Ferramentas
+- **🔄 Resetar**: Remove todos os dados
+- **💾 Exportar**: Baixa backup em JSON
+- **🔧 Testar Conexão**: Verifica status do Firebase
 
-// Enhanced Drag & Drop
-function employeeDragStart(e, empId) {
-    draggedElement = e.target;
-    draggedType = 'employee';
-    e.target.classList.add('dragging');
-    e.dataTransfer.setData('text/plain', empId);
-    e.dataTransfer.effectAllowed = 'move';
-}
+## 🏗️ Estrutura do Projeto
 
-function employeeDragEnd(e) {
-    e.target.classList.remove('dragging');
-    draggedElement = null;
-    draggedType = null;
-}
+```
+src/
+├── components/
+│   ├── StatusBar.js          # Barra de status de conexão
+│   ├── AddEmployeeForm.js    # Formulário de adição
+│   ├── Employee.js           # Componente de funcionário
+│   ├── EmployeePool.js       # Pool de funcionários
+│   ├── Department.js         # Componente de departamento
+│   ├── EmployeeModal.js      # Modal de edição de funcionário
+│   ├── DepartmentModal.js    # Modal de edição de departamento
+│   └── EditableTitle.js      # Títulos editáveis
+├── firebase.js               # Configuração do Firebase
+├── App.js                    # Componente principal
+├── App.css                   # Estilos da aplicação
+└── index.js                  # Ponto de entrada
+```
 
-function departmentDragStart(e, deptId) {
-    draggedElement = e.target;
-    draggedType = 'department';
-    e.target.classList.add('dragging');
-    e.dataTransfer.setData('text/plain', deptId);
-    e.dataTransfer.effectAllowed = 'move';
-}
+## 🎨 Personalização
 
-function departmentDragEnd(e) {
-    e.target.classList.remove('dragging');
-    draggedElement = null;
-    draggedType = null;
-}
+### Cores dos Departamentos
+Cada departamento pode ter sua cor personalizada através do modal de edição. A cor afeta:
+- Borda do departamento
+- Fundo sutil do departamento
+- Cor dos funcionários dentro do departamento
 
-function onDragOver(e) {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    if (draggedType === 'employee') {
-        e.currentTarget.classList.add('drop-hover');
-    }
-}
+### Responsividade
+O layout se adapta automaticamente para dispositivos móveis, empilhando elementos verticalmente.
 
-function onDragLeave(e) {
-    e.currentTarget.classList.remove('drop-hover');
-}
+## 🔒 Segurança
 
-function onDrop(e, deptId) {
-    e.preventDefault();
-    e.currentTarget.classList.remove('drop-hover');
-    
-    const draggedId = e.dataTransfer.getData('text/plain');
-    
-    if (draggedType === 'employee') {
-        const emp = data.employees.find(emp => emp.id == draggedId);
-        if (emp) {
-            emp.dept = deptId || null;
-            saveData(); 
-            refreshAll();
-        }
-    } else if (draggedType === 'department' && deptId === null) {
-        // Permitir reordenar departamentos apenas no pool
-        const draggedDept = data.departments.find(d => d.id === draggedId);
-        if (draggedDept) {
-            // Reordenar departamentos (mover para o final)
-            data.departments = data.departments.filter(d => d.id !== draggedId);
-            data.departments.push(draggedDept);
-            saveData();
-            refreshAll();
-        }
-    }
-}
+⚠️ **Importante**: As configurações de exemplo usam regras do Firebase abertas para facilitar o desenvolvimento. Para produção:
 
-// Adicionar funcionário
-document.getElementById('addEmployeeForm').onsubmit = function(e) {
-    e.preventDefault();
-    const name = document.getElementById('employeeName').value.trim();
-    const role = document.getElementById('employeeRole').value.trim();
-    const dept = document.getElementById('employeeDept').value || null;
-    if (!name || !role) {
-        alert('Preencha nome e cargo.');
-        return;
-    }
-    data.employeeCounter++;
-    data.employees.push({
-        id: data.employeeCounter,
-        name,
-        role,
-        dept,
-        email: '',
-        phone: '',
-        notes: ''
-    });
-    saveData(); 
-    refreshAll();
-    this.reset();
-};
+1. Implemente autenticação de usuários
+2. Configure regras de segurança apropriadas
+3. Valide dados no backend
+4. Use variáveis de ambiente para configurações sensíveis
 
-// Remover funcionário
-function removeEmployee(empId) {
-    if (!confirm('Tem certeza que deseja remover este funcionário?')) return;
-    data.employees = data.employees.filter(emp => emp.id != empId);
-    saveData(); 
-    refreshAll();
-}
+## 🔄 Builds e Deploy
 
-// Adicionar departamento
-function addDepartment() {
-    const name = prompt('Nome do departamento:');
-    if (!name) return;
-    const id = 'dep' + Math.random().toString(36).slice(2,9);
-    data.departments.push({
-        id, 
-        name,
-        manager: '',
-        description: '',
-        color: '#667eea'
-    });
-    saveData(); 
-    refreshAll();
-}
+### Build para produção:
+```bash
+npm run build
+```
 
-// Remover departamento
-function removeDepartment(depId) {
-    if (!confirm('Remover este departamento? Funcionários voltarão para o pool.')) return;
-    data.employees.forEach(emp => { if (emp.dept === depId) emp.dept = null; });
-    data.departments = data.departments.filter(dep => dep.id !== depId);
-    saveData(); 
-    refreshAll();
-}
+### Deploy (exemplos):
 
-// Resetar tudo
-function resetAll() {
-    if (!confirm('Tem certeza? Isso apagará tudo!')) return;
-    db.ref(dataPath).remove();
-}
+**Firebase Hosting:**
+```bash
+npm install -g firebase-tools
+firebase login
+firebase init hosting
+npm run build
+firebase deploy
+```
 
-// Exportar dados
-function exportData() {
-    const dataStr = JSON.stringify(data, null, 2);
-    const dataBlob = new Blob([dataStr], {type: 'application/json'});
-    const url = URL.createObjectURL(dataBlob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'organograma_backup.json';
-    link.click();
-    URL.revokeObjectURL(url);
-}
+**Netlify:**
+```bash
+npm run build
+# Arraste a pasta build para netlify.com
+```
 
-// Fechar modal ao clicar fora
-window.onclick = function(event) {
-    const modals = document.querySelectorAll('.modal');
-    modals.forEach(modal => {
-        if (event.target === modal) {
-            closeModal(modal.id);
-        }
-    });
-}
+## 🐛 Troubleshooting
 
-// Inicialização
-document.addEventListener('DOMContentLoaded', function() {
-    // O listener do Firebase já faz o refreshAll inicial
-});
-</script>
-</body>
-</html>
+### Problemas de Conexão
+1. Verifique se as configurações do Firebase estão corretas
+2. Confirme se o Realtime Database está ativado
+3. Verifique as regras de segurança do banco
+4. Use o botão "🔧 Testar Conexão" para diagnosticar
+
+### Problemas de Permissão
+- Erro `PERMISSION_DENIED`: Verifique as regras do Firebase
+- Dados não salvam: Confirme se as regras permitem escrita
+
+### Performance
+- Para muitos funcionários (>100), considere implementar paginação
+- Para uso intensivo, otimize as consultas do Firebase
+
+## 🤝 Contribuição
+
+1. Faça um fork do projeto
+2. Crie uma branch para sua feature (`git checkout -b feature/AmazingFeature`)
+3. Commit suas mudanças (`git commit -m 'Add some AmazingFeature'`)
+4. Push para a branch (`git push origin feature/AmazingFeature`)
+5. Abra um Pull Request
+
+## 📄 Licença
+
+Este projeto está sob a licença MIT. Veja o arquivo `LICENSE` para mais detalhes.
+
+## 📞 Suporte
+
+Para dúvidas ou problemas:
+1. Verifique se seguiu todas as instruções de configuração
+2. Consulte a documentação do Firebase
+3. Abra uma issue no repositório
+
+---
+
+**Versão React convertida do organograma HTML original, mantendo todas as funcionalidades e melhorando a estrutura de código.**
