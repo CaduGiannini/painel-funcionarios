@@ -2,8 +2,11 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel de Funcionários</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -140,7 +143,19 @@
     </div>
 </div>
 <script>
-const LS_KEY = 'painelFuncionariosData';
+/* CONFIGURAÇÃO DO SEU FIREBASE */
+const firebaseConfig = {
+    apiKey: "AIzaSyCurdZZRC1_vxgvTvHAJg-M_fRLW14-n8A",
+    authDomain: "organograma-c9d08.firebaseapp.com",
+    databaseURL: "https://organograma-c9d08.firebaseio.com",
+    projectId: "organograma-c9d08",
+    storageBucket: "organograma-c9d08.appspot.com",
+    messagingSenderId: "43858988878",
+    appId: "1:43858988878:web:abc123def456" /* Troque pelo appId real se precisar autenticação */
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const dataPath = 'painelFuncionarios';
 
 let data = {
     title: '🏢 Painel de Funcionários',
@@ -150,13 +165,23 @@ let data = {
     departments: []
 };
 
-function saveData() {
-    localStorage.setItem(LS_KEY, JSON.stringify(data));
-}
+let isSaving = false;
 
-function loadData() {
-    const saved = localStorage.getItem(LS_KEY);
-    if (saved) data = JSON.parse(saved);
+// Carregar e escutar mudanças em tempo real
+db.ref(dataPath).on('value', snap => {
+    if (snap.exists()) {
+        data = snap.val();
+        refreshAll();
+    }
+});
+
+function saveData() {
+    // Impede duplo disparo de evento
+    if (isSaving) return;
+    isSaving = true;
+    db.ref(dataPath).set(data, () => {
+        isSaving = false;
+    });
 }
 
 function refreshAll() {
@@ -250,5 +275,82 @@ function editDeptTitle(id) {
     };
     input.onkeydown = e => {
         if (e.key === 'Enter') input.blur();
-        if (e.key === 'Escape') {`
-
+        if (e.key === 'Escape') { input.value = dep.name; input.blur(); }
+    };
+    span.replaceWith(input);
+    input.focus();
+}
+
+// Drag & Drop
+function dragStart(e) {
+    e.dataTransfer.setData('text/plain', e.target.dataset.id);
+}
+function onDragOver(e) {
+    e.preventDefault();
+    e.currentTarget.classList.add('drop-hover');
+}
+function onDrop(e, deptId) {
+    e.preventDefault();
+    e.currentTarget.classList.remove('drop-hover');
+    const empId = e.dataTransfer.getData('text/plain');
+    const emp = data.employees.find(emp => emp.id == empId);
+    if (emp) {
+        emp.dept = deptId || null;
+        saveData(); refreshAll();
+    }
+}
+
+// Adicionar funcionário
+document.getElementById('addEmployeeForm').onsubmit = function(e) {
+    e.preventDefault();
+    const name = document.getElementById('employeeName').value.trim();
+    const role = document.getElementById('employeeRole').value.trim();
+    const dept = document.getElementById('employeeDept').value || null;
+    if (!name || !role) {
+        alert('Preencha nome e cargo.');
+        return;
+    }
+    data.employeeCounter++;
+    data.employees.push({
+        id: data.employeeCounter,
+        name,
+        role,
+        dept
+    });
+    saveData(); refreshAll();
+    this.reset();
+};
+
+// Remover funcionário
+function removeEmployee(empId) {
+    data.employees = data.employees.filter(emp => emp.id != empId);
+    saveData(); refreshAll();
+}
+
+// Adicionar departamento
+function addDepartment() {
+    const name = prompt('Nome do departamento:');
+    if (!name) return;
+    const id = 'dep' + Math.random().toString(36).slice(2,9);
+    data.departments.push({id, name});
+    saveData(); refreshAll();
+}
+
+// Remover departamento
+function removeDepartment(depId) {
+    if (!confirm('Remover este departamento? Funcionários voltarão para o pool.')) return;
+    data.employees.forEach(emp => { if (emp.dept === depId) emp.dept = null; });
+    data.departments = data.departments.filter(dep => dep.id !== depId);
+    saveData(); refreshAll();
+}
+
+// Resetar tudo
+function resetAll() {
+    if (!confirm('Tem certeza? Isso apagará tudo!')) return;
+    db.ref(dataPath).remove();
+}
+
+// Inicialização: o "on" do Firebase já faz o refreshAll inicial
+</script>
+</body>
+</html>
