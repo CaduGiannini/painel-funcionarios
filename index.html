@@ -1,0 +1,991 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Organograma Interativo - Painel de Funcionários</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f1f1f1;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 30px auto;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 0 20px #0002;
+            padding: 32px;
+        }
+        .status-bar {
+            background: #e74c3c;
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        .status-bar.connected {
+            background: #27ae60;
+        }
+        .status-bar.connecting {
+            background: #f39c12;
+        }
+        .status-bar.error {
+            background: #e74c3c;
+        }
+        .actions, .main-title {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 16px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .main-title h1, .main-title p {
+            margin: 0;
+            cursor: pointer;
+        }
+        .employee-list, .departments {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .employee-pool, .department {
+            background: #f9f9f9;
+            border: 2px dashed #ddd;
+            min-width: 210px;
+            min-height: 120px;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 20px;
+            box-sizing: border-box;
+            transition: all 0.3s ease;
+        }
+        .employee-pool {
+            flex: 1;
+        }
+        .department {
+            flex: 1;
+            position: relative;
+            cursor: move;
+        }
+        .department.dragging {
+            opacity: 0.5;
+            transform: rotate(5deg);
+        }
+        .department-title {
+            font-weight: bold;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+        .remove-btn {
+            background: #e74c3c;
+            border: none;
+            color: #fff;
+            border-radius: 50%;
+            width: 22px; 
+            height: 22px;
+            font-size: 13px;
+            cursor: pointer;
+            margin-left: 4px;
+            transition: background 0.3s ease;
+        }
+        .remove-btn:hover {
+            background: #c0392b;
+        }
+        .department.drop-hover {
+            border-color: #67b26f;
+            background: #e8f5e8;
+        }
+        .employee {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px;
+            margin: 4px 0;
+            background: #ffffff;
+            border-left: 4px solid #67b26f;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            cursor: move;
+            transition: all 0.3s ease;
+        }
+        .employee:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        .employee.dragging {
+            opacity: 0.5;
+            transform: rotate(5deg);
+        }
+        .employee-info {
+            flex: 1;
+            cursor: pointer;
+        }
+        .employee-name {
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .employee-role {
+            font-size: 12px;
+            color: #666;
+        }
+        .form-group {
+            margin-bottom: 16px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 4px;
+            font-weight: bold;
+        }
+        .form-group input, 
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .form-group textarea {
+            height: 80px;
+            resize: vertical;
+        }
+        .btn {
+            background: #67b26f;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            transition: background 0.3s ease;
+        }
+        .btn:hover {
+            background: #5a9a63;
+        }
+        .btn-secondary {
+            background: #6c757d;
+        }
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+        .btn-danger {
+            background: #e74c3c;
+        }
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.4);
+        }
+        .modal-content {
+            background-color: #fff;
+            margin: 5% auto;
+            padding: 20px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .close:hover,
+        .close:focus {
+            color: black;
+        }
+        .color-picker {
+            display: flex;
+            gap: 8px;
+            margin: 8px 0;
+        }
+        .color-option {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 3px solid transparent;
+            transition: border 0.3s ease;
+        }
+        .color-option.selected {
+            border-color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Status Bar -->
+        <div id="statusBar" class="status-bar">
+            <span id="statusText">Carregando...</span>
+        </div>
+
+        <!-- Título -->
+        <div class="main-title">
+            <h1 id="mainTitle">🏢 Painel de Funcionários</h1>
+            <p id="subtitle">Arraste e solte os funcionários nos departamentos</p>
+        </div>
+
+        <!-- Ações -->
+        <div class="actions">
+            <button class="btn" onclick="openModal('addEmployeeModal')">+ Funcionário</button>
+            <button class="btn" onclick="addDepartment()">+ Departamento</button>
+            <button class="btn btn-secondary" onclick="testConnection()">Testar Conexão</button>
+            <button class="btn btn-secondary" onclick="exportData()">Exportar Dados</button>
+            <button class="btn btn-danger" onclick="resetAll()">Resetar Tudo</button>
+        </div>
+
+        <!-- Pool de Funcionários -->
+        <div class="employee-list">
+            <div class="employee-pool" 
+                 ondragover="onDragOver(event)" 
+                 ondragleave="onDragLeave(event)" 
+                 ondrop="onDrop(event, null)">
+                <h3>👥 Pool de Funcionários</h3>
+                <div id="employeePool"></div>
+            </div>
+        </div>
+
+        <!-- Departamentos -->
+        <div class="departments" id="departmentsList"></div>
+    </div>
+
+    <!-- Modal Adicionar Funcionário -->
+    <div id="addEmployeeModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('addEmployeeModal')">&times;</span>
+            <h2>Adicionar Funcionário</h2>
+            <form id="addEmployeeForm">
+                <div class="form-group">
+                    <label>Nome:</label>
+                    <input type="text" id="employeeName" required>
+                </div>
+                <div class="form-group">
+                    <label>Cargo:</label>
+                    <input type="text" id="employeeRole" required>
+                </div>
+                <div class="form-group">
+                    <label>Email:</label>
+                    <input type="email" id="employeeEmail">
+                </div>
+                <div class="form-group">
+                    <label>Telefone:</label>
+                    <input type="tel" id="employeePhone">
+                </div>
+                <div class="form-group">
+                    <label>Departamento:</label>
+                    <select id="employeeDept">
+                        <option value="">Pool</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Observações:</label>
+                    <textarea id="employeeNotes"></textarea>
+                </div>
+                <button type="submit" class="btn">Adicionar</button>
+                <button type="button" class="btn btn-secondary" onclick="closeModal('addEmployeeModal')">Cancelar</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Editar Funcionário -->
+    <div id="editEmployeeModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('editEmployeeModal')">&times;</span>
+            <h2>Editar Funcionário</h2>
+            <form id="editEmployeeForm">
+                <div class="form-group">
+                    <label>Nome:</label>
+                    <input type="text" id="editEmployeeName" required>
+                </div>
+                <div class="form-group">
+                    <label>Cargo:</label>
+                    <input type="text" id="editEmployeeRole" required>
+                </div>
+                <div class="form-group">
+                    <label>Email:</label>
+                    <input type="email" id="editEmployeeEmail">
+                </div>
+                <div class="form-group">
+                    <label>Telefone:</label>
+                    <input type="tel" id="editEmployeePhone">
+                </div>
+                <div class="form-group">
+                    <label>Departamento:</label>
+                    <select id="editEmployeeDept">
+                        <option value="">Pool</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Observações:</label>
+                    <textarea id="editEmployeeNotes"></textarea>
+                </div>
+                <button type="submit" class="btn">Salvar</button>
+                <button type="button" class="btn btn-secondary" onclick="closeModal('editEmployeeModal')">Cancelar</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Editar Departamento -->
+    <div id="editDepartmentModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('editDepartmentModal')">&times;</span>
+            <h2>Editar Departamento</h2>
+            <form id="editDepartmentForm">
+                <div class="form-group">
+                    <label>Nome:</label>
+                    <input type="text" id="editDepartmentName" required>
+                </div>
+                <div class="form-group">
+                    <label>Gestor:</label>
+                    <input type="text" id="editDepartmentManager">
+                </div>
+                <div class="form-group">
+                    <label>Descrição:</label>
+                    <textarea id="editDepartmentDescription"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Cor:</label>
+                    <div class="color-picker">
+                        <div class="color-option" style="background: #667eea" data-color="#667eea"></div>
+                        <div class="color-option" style="background: #764ba2" data-color="#764ba2"></div>
+                        <div class="color-option" style="background: #f093fb" data-color="#f093fb"></div>
+                        <div class="color-option" style="background: #4facfe" data-color="#4facfe"></div>
+                        <div class="color-option" style="background: #43e97b" data-color="#43e97b"></div>
+                        <div class="color-option" style="background: #fa709a" data-color="#fa709a"></div>
+                        <div class="color-option" style="background: #ff9a9e" data-color="#ff9a9e"></div>
+                        <div class="color-option" style="background: #a8edea" data-color="#a8edea"></div>
+                    </div>
+                    <input type="color" id="editDepartmentColor" style="margin-top: 8px;">
+                </div>
+                <button type="submit" class="btn">Salvar</button>
+                <button type="button" class="btn btn-secondary" onclick="closeModal('editDepartmentModal')">Cancelar</button>
+            </form>
+        </div>
+    </div>
+
+<script>
+/* 
+   CONFIGURAÇÃO DO FIREBASE REALTIME DATABASE
+   
+   Para usar este projeto:
+   1. Crie um projeto no Firebase Console: https://console.firebase.google.com/
+   2. Ative o Realtime Database
+   3. Configure as regras (para testes, use regras abertas):
+   {
+     "rules": {
+       ".read": true,
+       ".write": true
+     }
+   }
+   
+   - Para PRODUÇÃO, use regras mais seguras:
+   {
+     "rules": {
+       ".read": "auth != null",
+       ".write": "auth != null"
+     }
+   }
+*/
+
+// Configuração do Firebase - SUBSTITUA PELAS SUAS CREDENCIAIS
+const firebaseConfig = {
+    // EXEMPLO - SUBSTITUA ESTAS CONFIGURAÇÕES PELAS SUAS:
+    apiKey: "AIzaSyDJrlB1Cf8wNNGUfVIPqsDY3LYSpA5Scrw",
+    authDomain: "organograma-c9d08.firebaseapp.com",
+    databaseURL: "https://organograma-c9d08-default-rtdb.firebaseio.com/",
+    projectId: "organograma-c9d08",
+    storageBucket: "organograma-c9d08.appspot.com",
+    messagingSenderId: "43858988878",
+    appId: "1:43858988878:web:abc123def456"
+};
+
+// Variáveis globais
+let db = null;
+let isFirebaseConnected = false;
+let data = {
+    title: '🏢 Painel de Funcionários',
+    subtitle: 'Arraste e solte os funcionários nos departamentos',
+    employeeCounter: 0,
+    employees: [],
+    departments: []
+};
+
+let isSaving = false;
+let currentEditingEmployee = null;
+let currentEditingDepartment = null;
+let draggedElement = null;
+let draggedType = null;
+
+// Inicializar Firebase com tratamento de erro melhorado
+function initializeFirebase() {
+    try {
+        if (firebase.apps.length === 0) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        db = firebase.database();
+        console.log('Firebase inicializado com sucesso');
+        updateStatus('Conectando ao Firebase...', 'connecting');
+        
+        // Testar conexão
+        testConnection();
+        
+        // Configurar listener de dados
+        initializeFirebaseListener();
+        
+    } catch (error) {
+        console.error('Erro ao inicializar Firebase:', error);
+        updateStatus('Erro na configuração do Firebase: ' + error.message, 'error');
+        
+        // Tentar usar localStorage como fallback
+        loadFromLocalStorage();
+    }
+}
+
+// Função para atualizar status de conexão
+function updateStatus(message, type) {
+    const statusBar = document.getElementById('statusBar');
+    const statusText = document.getElementById('statusText');
+    
+    statusText.textContent = message;
+    statusBar.className = 'status-bar ' + type;
+    statusBar.style.display = 'block';
+    
+    if (type === 'connected') {
+        setTimeout(() => {
+            statusBar.style.display = 'none';
+        }, 3000);
+    }
+}
+
+// Função para testar conexão
+function testConnection() {
+    if (!db) {
+        updateStatus('Firebase não inicializado. Usando armazenamento local.', 'error');
+        loadFromLocalStorage();
+        return;
+    }
+    
+    updateStatus('Testando conexão...', 'connecting');
+    
+    // Teste simples de leitura
+    db.ref('.info/connected').once('value', (snapshot) => {
+        if (snapshot.val() === true) {
+            updateStatus('Conexão com Firebase OK!', 'connected');
+            isFirebaseConnected = true;
+        } else {
+            updateStatus('Sem conexão com Firebase. Usando armazenamento local.', 'error');
+            isFirebaseConnected = false;
+            loadFromLocalStorage();
+        }
+    }).catch((error) => {
+        console.error('Erro ao testar conexão:', error);
+        updateStatus('Erro de conexão: ' + error.message + '. Usando armazenamento local.', 'error');
+        isFirebaseConnected = false;
+        loadFromLocalStorage();
+    });
+}
+
+// Carregar e escutar mudanças em tempo real
+function initializeFirebaseListener() {
+    if (!db) return;
+    
+    const dataPath = 'painelFuncionarios';
+    
+    db.ref(dataPath).on('value', (snap) => {
+        try {
+            if (snap.exists()) {
+                data = snap.val();
+                // Garantir que arrays existam
+                if (!data.employees) data.employees = [];
+                if (!data.departments) data.departments = [];
+                console.log('Dados carregados do Firebase:', data);
+                updateStatus('Dados sincronizados com Firebase', 'connected');
+                isFirebaseConnected = true;
+            } else {
+                console.log('Nenhum dado encontrado no Firebase - inicializando dados padrão');
+                saveData(); // Salvar dados padrão
+                updateStatus('Dados inicializados no Firebase', 'connected');
+                isFirebaseConnected = true;
+            }
+            refreshAll();
+        } catch (error) {
+            console.error('Erro ao processar dados do Firebase:', error);
+            updateStatus('Erro ao processar dados: ' + error.message, 'error');
+            loadFromLocalStorage();
+        }
+    }, (error) => {
+        console.error('Erro no listener do Firebase:', error);
+        updateStatus('Erro de permissão: ' + error.message, 'error');
+        isFirebaseConnected = false;
+        
+        // Sugerir soluções
+        if (error.code === 'PERMISSION_DENIED') {
+            updateStatus('ERRO: Permissão negada. Verifique as regras do Firebase. Usando armazenamento local.', 'error');
+        }
+        
+        loadFromLocalStorage();
+    });
+}
+
+// Salvar dados (Firebase ou localStorage)
+function saveData() {
+    if (isFirebaseConnected && db && !isSaving) {
+        isSaving = true;
+        updateStatus('Salvando dados no Firebase...', 'connecting');
+        
+        db.ref('painelFuncionarios').set(data)
+            .then(() => {
+                console.log('Dados salvos com sucesso no Firebase');
+                updateStatus('Dados salvos no Firebase!', 'connected');
+                isSaving = false;
+            })
+            .catch((error) => {
+                console.error('Erro ao salvar dados no Firebase:', error);
+                updateStatus('Erro ao salvar no Firebase: ' + error.message, 'error');
+                isSaving = false;
+                
+                // Fallback para localStorage
+                saveToLocalStorage();
+            });
+    } else {
+        // Usar localStorage como fallback
+        saveToLocalStorage();
+    }
+}
+
+// Salvar no localStorage
+function saveToLocalStorage() {
+    try {
+        localStorage.setItem('organograma_data', JSON.stringify(data));
+        updateStatus('Dados salvos localmente', 'connected');
+        console.log('Dados salvos no localStorage');
+    } catch (error) {
+        console.error('Erro ao salvar no localStorage:', error);
+        updateStatus('Erro ao salvar dados: ' + error.message, 'error');
+    }
+}
+
+// Carregar do localStorage
+function loadFromLocalStorage() {
+    try {
+        const savedData = localStorage.getItem('organograma_data');
+        if (savedData) {
+            data = JSON.parse(savedData);
+            // Garantir que arrays existam
+            if (!data.employees) data.employees = [];
+            if (!data.departments) data.departments = [];
+            console.log('Dados carregados do localStorage:', data);
+            updateStatus('Dados carregados do armazenamento local', 'connected');
+        } else {
+            updateStatus('Nenhum dado encontrado. Usando dados padrão.', 'connected');
+        }
+        refreshAll();
+    } catch (error) {
+        console.error('Erro ao carregar do localStorage:', error);
+        updateStatus('Erro ao carregar dados: ' + error.message, 'error');
+    }
+}
+
+// Atualizar interface
+function refreshAll() {
+    document.getElementById('mainTitle').textContent = data.title;
+    document.getElementById('subtitle').textContent = data.subtitle;
+    
+    // Lista de departamentos no select
+    const deptSelects = ['employeeDept', 'editEmployeeDept'];
+    deptSelects.forEach(selectId => {
+        const deptSelect = document.getElementById(selectId);
+        if (deptSelect) {
+            deptSelect.innerHTML = '<option value="">Pool</option>';
+            if (data.departments && data.departments.length > 0) {
+                data.departments.forEach(dep => {
+                    const opt = document.createElement('option');
+                    opt.value = dep.id;
+                    opt.textContent = dep.name;
+                    deptSelect.appendChild(opt);
+                });
+            }
+        }
+    });
+    
+    // Funcionários sem departamento (Pool)
+    const poolDiv = document.getElementById('employeePool');
+    poolDiv.querySelectorAll('.employee').forEach(e => e.remove());
+    if (data.employees && data.employees.length > 0) {
+        data.employees.filter(e => !e.dept).forEach(emp => {
+            poolDiv.appendChild(renderEmployee(emp));
+        });
+    }
+    
+    // Departamentos
+    const deptList = document.getElementById('departmentsList');
+    deptList.innerHTML = '';
+    if (data.departments && data.departments.length > 0) {
+        data.departments.forEach(dep => {
+            deptList.appendChild(renderDepartment(dep));
+        });
+    }
+}
+
+// Renderizar funcionário
+function renderEmployee(emp) {
+    const div = document.createElement('div');
+    div.className = 'employee';
+    div.draggable = true;
+    div.innerHTML = `
+        <div class="employee-info" onclick="editEmployee(${emp.id})">
+            <div class="employee-name">${emp.name}</div>
+            <div class="employee-role">${emp.role}</div>
+        </div>
+        <button class="remove-btn" onclick="removeEmployee(${emp.id})" title="Remover">&times;</button>
+    `;
+    
+    div.ondragstart = e => employeeDragStart(e, emp.id);
+    div.ondragend = employeeDragEnd;
+    
+    return div;
+}
+
+// Renderizar departamento
+function renderDepartment(dep) {
+    const div = document.createElement('div');
+    div.className = 'department';
+    div.style.background = `linear-gradient(135deg, ${dep.color || '#667eea'}, ${adjustColor(dep.color || '#667eea', -20)})`;
+    div.style.color = 'white';
+    div.draggable = true;
+    
+    div.ondragover = onDragOver;
+    div.ondragleave = onDragLeave;
+    div.ondrop = e => onDrop(e, dep.id);
+    div.ondragstart = e => departmentDragStart(e, dep.id);
+    div.ondragend = departmentDragEnd;
+    
+    const employees = data.employees ? data.employees.filter(e => e.dept === dep.id) : [];
+    
+    div.innerHTML = `
+        <div class="department-title" onclick="editDepartment('${dep.id}')">
+            <span>${dep.name}</span>
+            <button class="remove-btn" onclick="removeDepartment('${dep.id}')" title="Remover departamento">&times;</button>
+        </div>
+        ${dep.manager ? `<div style="font-size: 12px; margin-bottom: 8px;">👤 ${dep.manager}</div>` : ''}
+        <div class="department-employees">
+            ${employees.map(emp => `
+                <div class="employee" draggable="true" 
+                     ondragstart="employeeDragStart(event, ${emp.id})"
+                     ondragend="employeeDragEnd(event)">
+                    <div class="employee-info" onclick="editEmployee(${emp.id})">
+                        <div class="employee-name">${emp.name}</div>
+                        <div class="employee-role">${emp.role}</div>
+                    </div>
+                    <button class="remove-btn" onclick="removeEmployee(${emp.id})" title="Remover">&times;</button>
+                </div>
+            `).join('')}
+        </div>
+    `;
+    
+    return div;
+}
+
+// Ajustar cor (para gradiente)
+function adjustColor(color, amount) {
+    return '#' + color.replace(/^#/, '').replace(/../g, color => 
+        ('0' + Math.min(255, Math.max(0, parseInt(color, 16) + amount)).toString(16)).substr(-2)
+    );
+}
+
+// Modais
+function openModal(modalId) {
+    document.getElementById(modalId).style.display = 'block';
+    
+    if (modalId === 'addEmployeeModal') {
+        document.getElementById('addEmployeeForm').reset();
+    }
+}
+
+function closeModal(modalId) {
+    document.getElementById(modalId).style.display = 'none';
+}
+
+// Editar funcionário
+function editEmployee(empId) {
+    const emp = data.employees.find(e => e.id == empId);
+    if (!emp) return;
+    
+    currentEditingEmployee = empId;
+    document.getElementById('editEmployeeName').value = emp.name || '';
+    document.getElementById('editEmployeeRole').value = emp.role || '';
+    document.getElementById('editEmployeeEmail').value = emp.email || '';
+    document.getElementById('editEmployeePhone').value = emp.phone || '';
+    document.getElementById('editEmployeeDept').value = emp.dept || '';
+    document.getElementById('editEmployeeNotes').value = emp.notes || '';
+    
+    openModal('editEmployeeModal');
+}
+
+// Editar departamento
+function editDepartment(depId) {
+    const dep = data.departments.find(d => d.id === depId);
+    if (!dep) return;
+    
+    currentEditingDepartment = depId;
+    document.getElementById('editDepartmentName').value = dep.name || '';
+    document.getElementById('editDepartmentManager').value = dep.manager || '';
+    document.getElementById('editDepartmentDescription').value = dep.description || '';
+    document.getElementById('editDepartmentColor').value = dep.color || '#667eea';
+    
+    // Atualizar seleção de cor
+    document.querySelectorAll('.color-option').forEach(option => {
+        option.classList.toggle('selected', option.dataset.color === dep.color);
+    });
+    
+    openModal('editDepartmentModal');
+}
+
+// Drag & Drop
+function employeeDragStart(e, empId) {
+    draggedElement = e.target;
+    draggedType = 'employee';
+    e.target.classList.add('dragging');
+    e.dataTransfer.setData('text/plain', empId);
+    e.dataTransfer.effectAllowed = 'move';
+}
+
+function employeeDragEnd(e) {
+    e.target.classList.remove('dragging');
+    draggedElement = null;
+    draggedType = null;
+}
+
+function departmentDragStart(e, deptId) {
+    draggedElement = e.target;
+    draggedType = 'department';
+    e.target.classList.add('dragging');
+    e.dataTransfer.setData('text/plain', deptId);
+    e.dataTransfer.effectAllowed = 'move';
+}
+
+function departmentDragEnd(e) {
+    e.target.classList.remove('dragging');
+    draggedElement = null;
+    draggedType = null;
+}
+
+function onDragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (draggedType === 'employee') {
+        e.currentTarget.classList.add('drop-hover');
+    }
+}
+
+function onDragLeave(e) {
+    e.currentTarget.classList.remove('drop-hover');
+}
+
+function onDrop(e, deptId) {
+    e.preventDefault();
+    e.currentTarget.classList.remove('drop-hover');
+    
+    const draggedId = e.dataTransfer.getData('text/plain');
+    
+    if (draggedType === 'employee') {
+        const emp = data.employees.find(emp => emp.id == draggedId);
+        if (emp) {
+            emp.dept = deptId || null;
+            saveData(); 
+            refreshAll();
+        }
+    }
+}
+
+// Event Listeners
+document.getElementById('addEmployeeForm').onsubmit = function(e) {
+    e.preventDefault();
+    const name = document.getElementById('employeeName').value.trim();
+    const role = document.getElementById('employeeRole').value.trim();
+    const email = document.getElementById('employeeEmail').value.trim();
+    const phone = document.getElementById('employeePhone').value.trim();
+    const dept = document.getElementById('employeeDept').value || null;
+    const notes = document.getElementById('employeeNotes').value.trim();
+    
+    if (!name || !role) {
+        alert('Preencha nome e cargo.');
+        return;
+    }
+    
+    data.employeeCounter++;
+    data.employees.push({
+        id: data.employeeCounter,
+        name,
+        role,
+        dept,
+        email,
+        phone,
+        notes
+    });
+    
+    saveData(); 
+    refreshAll();
+    closeModal('addEmployeeModal');
+};
+
+document.getElementById('editEmployeeForm').onsubmit = function(e) {
+    e.preventDefault();
+    const emp = data.employees.find(e => e.id == currentEditingEmployee);
+    if (!emp) return;
+    
+    emp.name = document.getElementById('editEmployeeName').value.trim();
+    emp.role = document.getElementById('editEmployeeRole').value.trim();
+    emp.email = document.getElementById('editEmployeeEmail').value.trim();
+    emp.phone = document.getElementById('editEmployeePhone').value.trim();
+    emp.dept = document.getElementById('editEmployeeDept').value || null;
+    emp.notes = document.getElementById('editEmployeeNotes').value.trim();
+    
+    saveData();
+    refreshAll();
+    closeModal('editEmployeeModal');
+};
+
+document.getElementById('editDepartmentForm').onsubmit = function(e) {
+    e.preventDefault();
+    const dep = data.departments.find(d => d.id === currentEditingDepartment);
+    if (!dep) return;
+    
+    dep.name = document.getElementById('editDepartmentName').value.trim();
+    dep.manager = document.getElementById('editDepartmentManager').value.trim();
+    dep.description = document.getElementById('editDepartmentDescription').value.trim();
+    dep.color = document.getElementById('editDepartmentColor').value;
+    
+    saveData();
+    refreshAll();
+    closeModal('editDepartmentModal');
+};
+
+// Seletor de cores
+document.querySelectorAll('.color-option').forEach(option => {
+    option.onclick = function() {
+        const color = this.dataset.color;
+        document.getElementById('editDepartmentColor').value = color;
+        document.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('selected'));
+        this.classList.add('selected');
+    };
+});
+
+// Funções auxiliares
+function removeEmployee(empId) {
+    if (!confirm('Tem certeza que deseja remover este funcionário?')) return;
+    data.employees = data.employees.filter(emp => emp.id != empId);
+    saveData(); 
+    refreshAll();
+}
+
+function addDepartment() {
+    const name = prompt('Nome do departamento:');
+    if (!name) return;
+    const id = 'dep' + Math.random().toString(36).slice(2,9);
+    data.departments.push({
+        id, 
+        name,
+        manager: '',
+        description: '',
+        color: '#667eea'
+    });
+    saveData(); 
+    refreshAll();
+}
+
+function removeDepartment(depId) {
+    if (!confirm('Remover este departamento? Funcionários voltarão para o pool.')) return;
+    data.employees.forEach(emp => { if (emp.dept === depId) emp.dept = null; });
+    data.departments = data.departments.filter(dep => dep.id !== depId);
+    saveData(); 
+    refreshAll();
+}
+
+function resetAll() {
+    if (!confirm('Tem certeza? Isso apagará todos os dados!')) return;
+    
+    // Reset dados
+    data = {
+        title: '🏢 Painel de Funcionários',
+        subtitle: 'Arraste e solte os funcionários nos departamentos',
+        employeeCounter: 0,
+        employees: [],
+        departments: []
+    };
+    
+    if (isFirebaseConnected && db) {
+        db.ref('painelFuncionarios').remove()
+            .then(() => {
+                updateStatus('Dados resetados com sucesso!', 'connected');
+                refreshAll();
+            })
+            .catch((error) => {
+                updateStatus('Erro ao resetar: ' + error.message, 'error');
+            });
+    } else {
+        localStorage.removeItem('organograma_data');
+        updateStatus('Dados resetados!', 'connected');
+        refreshAll();
+    }
+}
+
+function exportData() {
+    const dataStr = JSON.stringify(data, null, 2);
+    const dataBlob = new Blob([dataStr], {type: 'application/json'});
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'organograma_backup_' + new Date().toISOString().slice(0,10) + '.json';
+    link.click();
+    URL.revokeObjectURL(url);
+}
+
+// Fechar modal ao clicar fora
+window.onclick = function(event) {
+    const modals = document.querySelectorAll('.modal');
+    modals.forEach(modal => {
+        if (event.target === modal) {
+            closeModal(modal.id);
+        }
+    });
+}
+
+// Inicialização
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Página carregada, inicializando...');
+    
+    // Inicializar Firebase
+    setTimeout(() => {
+        initializeFirebase();
+    }, 500);
+    
+    // Carregar dados iniciais do localStorage enquanto Firebase carrega
+    loadFromLocalStorage();
+});
+</script>
+</body>
+</html>
