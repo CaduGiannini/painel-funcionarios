@@ -29,7 +29,6 @@ function App() {
   
   // Estados de drag and drop
   const [draggedType, setDraggedType] = useState(null);
-  const [draggedId, setDraggedId] = useState(null);
 
   // Função auxiliar para atualizar dados e salvar
   const updateDataAndSave = useCallback((newData) => {
@@ -76,7 +75,7 @@ function App() {
 
   // Handlers dos modais
   const openEmployeeModal = (empId) => {
-    const employee = data.employees.find(e => e.id == empId);
+    const employee = data.employees.find(e => e.id === empId);
     if (employee) {
       setCurrentEmployee(employee);
       setEmployeeModalOpen(true);
@@ -95,7 +94,7 @@ function App() {
     const newData = {
       ...data,
       employees: data.employees.map(emp => 
-        emp.id == updatedEmployee.id ? updatedEmployee : emp
+        emp.id === updatedEmployee.id ? updatedEmployee : emp
       )
     };
     updateDataAndSave(newData);
@@ -117,7 +116,7 @@ function App() {
     
     const newData = {
       ...data,
-      employees: data.employees.filter(emp => emp.id != empId)
+      employees: data.employees.filter(emp => emp.id !== empId)
     };
     updateDataAndSave(newData);
   };
@@ -189,12 +188,10 @@ function App() {
   // Handlers de drag and drop
   const handleDragStart = (type, id) => {
     setDraggedType(type);
-    setDraggedId(id);
   };
 
   const handleDragEnd = () => {
     setDraggedType(null);
-    setDraggedId(null);
   };
 
   const handleDrop = (draggedId, targetDeptId) => {
@@ -202,7 +199,7 @@ function App() {
       const newData = {
         ...data,
         employees: data.employees.map(emp => 
-          emp.id == draggedId ? { ...emp, dept: targetDeptId || null } : emp
+          emp.id === draggedId ? { ...emp, dept: targetDeptId || null } : emp
         )
       };
       updateDataAndSave(newData);

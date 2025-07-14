@@ -12,12 +12,14 @@ Uma aplicação React para gerenciamento de funcionários e departamentos com fu
 - ✅ **Exportação de dados** - Faça backup dos dados em JSON
 - ✅ **Interface responsiva** - Funciona em desktop e mobile
 - ✅ **Status de conexão** - Acompanhe o status da conexão com Firebase
+- ✅ **Deploy automatizado** - GitHub Pages com GitHub Actions
 
 ## 📋 Pré-requisitos
 
 - Node.js (versão 14 ou superior)
 - npm ou yarn
 - Conta no Firebase
+- Conta no GitHub (para deploy)
 
 ## 🛠️ Instalação
 
@@ -30,55 +32,91 @@ Uma aplicação React para gerenciamento de funcionários e departamentos com fu
 2. **Instale as dependências**
    ```bash
    npm install
-   # ou
-   yarn install
    ```
 
-3. **Configure o Firebase**
-   
-   a. Acesse [Firebase Console](https://console.firebase.google.com/)
-   
-   b. Crie um novo projeto ou use um existente
-   
-   c. Ative o **Realtime Database**
-   
-   d. Configure as regras do banco (para desenvolvimento):
-   ```json
-   {
-     "rules": {
-       ".read": true,
-       ".write": true
-     }
-   }
-   ```
-   
-   e. Vá em **Configurações do Projeto** > **Geral** > **Seus apps**
-   
-   f. Adicione um app web e copie a configuração
-   
-   g. Substitua as configurações em `src/firebaseConfig.js`:
-   ```javascript
-   const firebaseConfig = {
-     apiKey: "sua-api-key",
-     authDomain: "seu-projeto.firebaseapp.com",
-     databaseURL: "https://seu-projeto-default-rtdb.firebaseio.com/",
-     projectId: "seu-projeto",
-     storageBucket: "seu-projeto.appspot.com",
-     messagingSenderId: "123456789",
-     appId: "1:123456789:web:abcdef123456"
-   };
-   ```
+3. **Configure o Firebase** (veja seção detalhada abaixo)
 
 4. **Execute a aplicação**
    ```bash
    npm start
-   # ou
-   yarn start
    ```
 
 5. **Acesse a aplicação**
    
    Abra [http://localhost:3000](http://localhost:3000) no seu navegador
+
+## 🔥 Deploy no GitHub Pages
+
+### 🚀 Deploy Automático (Recomendado)
+
+1. **Configure o repositório**
+   ```bash
+   # Edite package.json - linha homepage:
+   "homepage": "https://SEU_USUARIO.github.io/SEU_REPOSITORIO"
+   
+   # Primeiro commit
+   git add .
+   git commit -m "Setup para deploy"
+   git push origin main
+   ```
+
+2. **Configure GitHub Pages**
+   - Repositório → Settings → Pages
+   - Source: `GitHub Actions`
+
+3. **Deploy automático**
+   - Cada push na branch `main` fará deploy automaticamente
+   - Acompanhe em: Repositório → Actions
+
+4. **Acesse sua aplicação**
+   - URL: `https://SEU_USUARIO.github.io/SEU_REPOSITORIO`
+
+### 📤 Deploy Manual (Alternativo)
+
+```bash
+npm run deploy
+```
+
+### 📚 Guias Detalhados
+
+- **[DEPLOY.md](DEPLOY.md)** - Guia completo de deploy
+- **[QUICK_START.md](QUICK_START.md)** - Início rápido
+- **Script auxiliar**: `./deploy-commands.sh` (Linux/Mac)
+
+## 🔧 Configuração do Firebase
+
+### Opção 1: Variáveis de Ambiente (Recomendado)
+
+1. **Copie o arquivo de exemplo**
+   ```bash
+   cp .env.example .env
+   ```
+
+2. **Preencha as configurações**
+   ```env
+   REACT_APP_FIREBASE_API_KEY=sua_api_key
+   REACT_APP_FIREBASE_AUTH_DOMAIN=seu-projeto.firebaseapp.com
+   # ... outras configurações
+   ```
+
+3. **Para GitHub Pages** - Configure secrets:
+   - Repositório → Settings → Secrets → Actions
+   - Adicione todas as variáveis REACT_APP_FIREBASE_*
+
+### Opção 2: Configuração Direta
+
+Edite `src/firebaseConfig.js` com suas configurações do Firebase.
+
+### Configuração do Realtime Database
+
+```json
+{
+  "rules": {
+    ".read": true,
+    ".write": true
+  }
+}
+```
 
 ## 🎯 Como usar
 
@@ -123,32 +161,27 @@ src/
 ├── App.css                 # Estilos principais
 ├── index.js               # Ponto de entrada
 └── index.css              # Estilos globais
+
+# Arquivos de deploy
+.github/workflows/deploy.yml # GitHub Actions
+.env.example                # Exemplo de variáveis
+deploy-commands.sh          # Script auxiliar
+DEPLOY.md                   # Guia de deploy
 ```
 
-## 🔧 Configuração de Produção
-
-Para produção, configure regras de segurança mais restritivas no Firebase:
-
-```json
-{
-  "rules": {
-    ".read": "auth != null",
-    ".write": "auth != null"
-  }
-}
-```
-
-E implemente autenticação conforme necessário.
-
-## 🏗️ Build para Produção
+## 🔧 Scripts Disponíveis
 
 ```bash
-npm run build
-# ou
-yarn build
+npm start      # Desenvolvimento
+npm run build  # Build de produção
+npm test       # Executar testes
+npm run deploy # Deploy manual (gh-pages)
 ```
 
-Os arquivos de produção serão criados na pasta `build/`.
+## 🌐 URLs
+
+- **Desenvolvimento**: `http://localhost:3000`
+- **Produção**: `https://SEU_USUARIO.github.io/SEU_REPOSITORIO`
 
 ## 🎨 Personalização
 
@@ -163,6 +196,26 @@ Para adicionar novos campos aos funcionários ou departamentos:
 1. Atualize os modais correspondentes
 2. Modifique a estrutura de dados no hook `useFirebase.js`
 3. Ajuste os componentes `Employee.js` ou `Department.js`
+
+## 🔍 Solução de Problemas
+
+### Deploy Issues
+- Verificar configuração do GitHub Pages
+- Conferir logs no GitHub Actions
+- Validar URL da homepage no package.json
+
+### Firebase Issues
+- Verificar regras do Realtime Database
+- Confirmar configurações no firebaseConfig.js
+- Testar conexão usando botão na aplicação
+
+### Build Issues
+```bash
+# Limpar cache e reinstalar
+npm cache clean --force
+rm -rf node_modules package-lock.json
+npm install
+```
 
 ## 🤝 Contribuição
 
@@ -179,7 +232,11 @@ Este projeto está sob a licença MIT. Veja o arquivo `LICENSE` para mais detalh
 ## 📞 Suporte
 
 Se encontrar algum problema ou tiver dúvidas:
-1. Verifique se o Firebase está configurado corretamente
-2. Confirme se as regras do banco estão adequadas
+1. Verifique os guias de troubleshooting
+2. Consulte a documentação do Firebase
 3. Verifique o console do navegador para erros
 4. Teste a conexão usando o botão "🔧 Testar Conexão"
+
+---
+
+**Criado com ❤️ usando React + Firebase + GitHub Pages**

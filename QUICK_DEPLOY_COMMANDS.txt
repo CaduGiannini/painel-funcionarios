@@ -1,0 +1,72 @@
+# 🚀 COMANDOS PRONTOS PARA DEPLOY - COPIE E COLE
+
+## 1️⃣ CONFIGURAÇÃO INICIAL (Substitua SEU_USUARIO e SEU_REPOSITORIO)
+
+# Editar package.json - linha 5:
+"homepage": "https://SEU_USUARIO.github.io/SEU_REPOSITORIO",
+
+# Comandos Git:
+git init
+git add .
+git commit -m "Setup para deploy GitHub Pages - Organograma React"
+git branch -M main
+git remote add origin https://github.com/SEU_USUARIO/SEU_REPOSITORIO.git
+git push -u origin main
+
+## 2️⃣ CONFIGURAR GITHUB PAGES
+
+# Ir para: https://github.com/SEU_USUARIO/SEU_REPOSITORIO/settings
+# Menu lateral: Pages
+# Source: GitHub Actions
+# Salvar
+
+## 3️⃣ TESTAR BUILD LOCAL
+
+npm run build
+
+## 4️⃣ VARIÁVEIS FIREBASE (OPCIONAL - PARA PRODUÇÃO SEGURA)
+
+# Ir para: https://github.com/SEU_USUARIO/SEU_REPOSITORIO/settings/secrets/actions
+# Adicionar estas variáveis como Repository Secrets:
+
+REACT_APP_FIREBASE_API_KEY
+REACT_APP_FIREBASE_AUTH_DOMAIN  
+REACT_APP_FIREBASE_DATABASE_URL
+REACT_APP_FIREBASE_PROJECT_ID
+REACT_APP_FIREBASE_STORAGE_BUCKET
+REACT_APP_FIREBASE_MESSAGING_SENDER_ID
+REACT_APP_FIREBASE_APP_ID
+
+## 5️⃣ URLS FINAIS
+
+Desenvolvimento: http://localhost:3000
+Produção: https://SEU_USUARIO.github.io/SEU_REPOSITORIO
+Actions: https://github.com/SEU_USUARIO/SEU_REPOSITORIO/actions
+
+## 6️⃣ COMANDOS FUTUROS
+
+# Atualizar aplicação:
+git add .
+git commit -m "Descrição das mudanças"
+git push origin main
+
+# Deploy manual (alternativo):
+npm run deploy
+
+# Build local:
+npm run build
+
+# Desenvolvimento:
+npm start
+
+## ✅ CHECKLIST
+
+[ ] Editei homepage no package.json
+[ ] Criei repositório no GitHub  
+[ ] Configurei GitHub Pages
+[ ] Fiz primeiro push
+[ ] Actions está rodando
+[ ] Aplicação acessível na URL final
+
+---
+SUCESSO! Sua aplicação estará online em poucos minutos! 🎉
