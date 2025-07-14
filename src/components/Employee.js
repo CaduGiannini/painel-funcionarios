@@ -37,11 +37,9 @@ const Employee = ({
       .slice(0, 2);
   };
 
-  const employeeStyle = {};
-  if (dept && dept.color) {
-    employeeStyle.borderLeftColor = dept.color;
-    employeeStyle.background = `linear-gradient(135deg, ${dept.color}10 0%, ${dept.color}05 100%)`;
-  }
+  const employeeStyle = {
+    '--emp-color': dept?.color || '#3b82f6'
+  };
 
   return (
     <div 
@@ -61,10 +59,12 @@ const Employee = ({
             className="employee-photo"
           />
         ) : (
-          <div className="employee-initials" style={{ 
-            backgroundColor: dept?.color || '#667eea',
-            color: 'white'
-          }}>
+          <div 
+            className="employee-initials" 
+            style={{ 
+              backgroundColor: dept?.color || '#3b82f6'
+            }}
+          >
             {getInitials(employee.name)}
           </div>
         )}
@@ -82,7 +82,10 @@ const Employee = ({
       <div className="employee-actions">
         <button 
           className="edit-btn" 
-          onClick={() => onEdit(employee.id)}
+          onClick={(e) => {
+            e.stopPropagation();
+            onEdit(employee.id);
+          }}
           title="Editar funcionário"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
@@ -91,7 +94,10 @@ const Employee = ({
         </button>
         <button 
           className="remove-btn" 
-          onClick={() => onRemove(employee.id)}
+          onClick={(e) => {
+            e.stopPropagation();
+            onRemove(employee.id);
+          }}
           title="Remover funcionário"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">

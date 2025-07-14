@@ -30,9 +30,9 @@ const Department = ({
     const draggedId = e.dataTransfer.getData('text/plain');
     const draggedIdNum = parseInt(draggedId, 10);
     
-    console.log('Drop no departamento:', department.name, 'ID arrastado:', draggedIdNum);
+    console.log('🏢 Drop no departamento:', department.name, 'ID arrastado:', draggedIdNum);
     
-    if (draggedIdNum && onDrop) {
+    if (draggedIdNum && !isNaN(draggedIdNum) && onDrop) {
       onDrop(draggedIdNum, department.id);
     }
   };
@@ -58,18 +58,6 @@ const Department = ({
       setIsDragOver(false);
       e.currentTarget.classList.remove('drop-hover');
     }
-  };
-
-  const handleDragStart = (e) => {
-    e.dataTransfer.setData('text/plain', department.id);
-    e.dataTransfer.effectAllowed = 'move';
-    if (onDragStart) onDragStart('department', department.id);
-  };
-
-  const handleDragEnd = (e) => {
-    setIsDragOver(false);
-    e.currentTarget.classList.remove('drop-hover');
-    if (onDragEnd) onDragEnd();
   };
 
   const handleTitleDoubleClick = () => {
@@ -100,24 +88,16 @@ const Department = ({
   };
 
   const departmentStyle = {
-    '--dept-color': department.color || '#667eea'
+    '--dept-color': department.color || '#3b82f6'
   };
-
-  if (department.color) {
-    departmentStyle.borderTopColor = department.color;
-    departmentStyle.background = `linear-gradient(135deg, ${department.color}08 0%, ${department.color}03 100%)`;
-  }
 
   return (
     <div 
       className={`department ${isDragOver ? 'drop-hover' : ''}`}
-      draggable
       data-id={department.id}
       onDrop={handleDrop}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
       style={departmentStyle}
     >
       <div className="department-header">
@@ -146,7 +126,10 @@ const Department = ({
           <div className="department-actions">
             <button 
               className="edit-btn" 
-              onClick={() => onDepartmentEdit(department.id)}
+              onClick={(e) => {
+                e.stopPropagation();
+                onDepartmentEdit(department.id);
+              }}
               title="Editar departamento"
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
@@ -155,7 +138,10 @@ const Department = ({
             </button>
             <button 
               className="remove-btn" 
-              onClick={() => onDepartmentRemove(department.id)}
+              onClick={(e) => {
+                e.stopPropagation();
+                onDepartmentRemove(department.id);
+              }}
               title="Remover departamento"
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">

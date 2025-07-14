@@ -33,7 +33,7 @@ function App() {
   // Estado para controlar visibilidade da barra de status
   const [statusVisible, setStatusVisible] = useState(false);
 
-  // Auto-hide da barra de status após 5 segundos para erros
+  // Auto-hide da barra de status
   React.useEffect(() => {
     if (status.type === 'error') {
       setStatusVisible(true);
@@ -72,108 +72,47 @@ function App() {
   const handleAddEmployee = (e) => {
     e.preventDefault();
     if (!newEmployee.name.trim() || !newEmployee.role.trim()) {
-      alert('Preencha nome e cargo.');
+      alert('Nome e cargo são obrigatórios!');
       return;
     }
-    
+
+    const newId = Math.max(0, ...data.employees.map(emp => emp.id || 0)) + 1;
+    const employee = {
+      id: newId,
+      name: newEmployee.name.trim(),
+      role: newEmployee.role.trim(),
+      dept: newEmployee.dept || null,
+      email: '',
+      phone: '',
+      notes: '',
+      photo: ''
+    };
+
     const newData = {
       ...data,
-      employeeCounter: data.employeeCounter + 1,
-      employees: [
-        ...data.employees,
-        {
-          id: data.employeeCounter + 1,
-          name: newEmployee.name.trim(),
-          role: newEmployee.role.trim(),
-          dept: newEmployee.dept || null,
-          email: '',
-          phone: '',
-          notes: ''
-        }
-      ]
+      employees: [...data.employees, employee]
     };
-    
+
     updateDataAndSave(newData);
     setNewEmployee({ name: '', role: '', dept: '' });
   };
 
-  // Handlers dos modais
-  const openEmployeeModal = (empId) => {
-    const employee = data.employees.find(e => e.id === empId);
-    if (employee) {
-      setCurrentEmployee(employee);
-      setEmployeeModalOpen(true);
-    }
-  };
-
-  const openDepartmentModal = (deptId) => {
-    const department = data.departments.find(d => d.id === deptId);
-    if (department) {
-      setCurrentDepartment(department);
-      setDepartmentModalOpen(true);
-    }
-  };
-
-  const handleEmployeeSave = (updatedEmployee) => {
-    const newData = {
-      ...data,
-      employees: data.employees.map(emp => 
-        emp.id === updatedEmployee.id ? updatedEmployee : emp
-      )
-    };
-    updateDataAndSave(newData);
-  };
-
-  const handleDepartmentSave = (updatedDepartment) => {
-    const newData = {
-      ...data,
-      departments: data.departments.map(dept => 
-        dept.id === updatedDepartment.id ? updatedDepartment : dept
-      )
-    };
-    updateDataAndSave(newData);
-  };
-
-  // Handlers de remoção
-  const removeEmployee = (empId) => {
-    if (!window.confirm('Tem certeza que deseja remover este funcionário?')) return;
-    
-    const newData = {
-      ...data,
-      employees: data.employees.filter(emp => emp.id !== empId)
-    };
-    updateDataAndSave(newData);
-  };
-
-  const removeDepartment = (deptId) => {
-    if (!window.confirm('Remover este departamento? Funcionários voltarão para o pool.')) return;
-    
-    const newData = {
-      ...data,
-      employees: data.employees.map(emp => 
-        emp.dept === deptId ? { ...emp, dept: null } : emp
-      ),
-      departments: data.departments.filter(dept => dept.id !== deptId)
-    };
-    updateDataAndSave(newData);
-  };
-
   // Handler para adicionar departamento
-  const addDepartment = () => {
-    const name = window.prompt('Nome do departamento:');
-    if (!name) return;
-    
-    const id = 'dep' + Math.random().toString(36).slice(2, 9);
+  const handleAddDepartment = () => {
+    const newId = Math.max(0, ...data.departments.map(dept => dept.id || 0)) + 1;
     const newData = {
       ...data,
       departments: [
         ...data.departments,
         {
-          id,
-          name,
+          id: newId,
+          name: 'Novo Departamento',
           manager: '',
           description: '',
-          color: '#667eea'
+          location: '',
+          budget: '',
+          goals: '',
+          color: '#3b82f6'
         }
       ]
     };
@@ -209,19 +148,19 @@ function App() {
     }
   };
 
-  // Handlers de drag and drop
+  // Handlers de drag and drop melhorados
   const handleDragStart = (type, id) => {
-    console.log('Drag start:', type, id);
+    console.log('🚀 Drag start:', type, id);
     setDraggedType(type);
   };
 
   const handleDragEnd = () => {
-    console.log('Drag end');
+    console.log('🏁 Drag end');
     setDraggedType(null);
   };
 
   const handleDrop = (draggedId, targetDeptId) => {
-    console.log('Drop handler:', draggedId, targetDeptId, draggedType);
+    console.log('📦 Drop:', { draggedId, targetDeptId, draggedType });
     
     if (draggedType === 'employee') {
       const draggedIdNum = parseInt(draggedId, 10);
@@ -235,11 +174,10 @@ function App() {
         }
       }
       
-      console.log('Moving employee', draggedIdNum, 'to dept', targetDeptIdNum);
+      console.log('✅ Moving employee', draggedIdNum, 'to dept', targetDeptIdNum);
       
-      // Validação adicional para garantir que não temos NaN
       if (isNaN(draggedIdNum)) {
-        console.error('ID do funcionário inválido:', draggedId);
+        console.error('❌ ID do funcionário inválido:', draggedId);
         return;
       }
       
@@ -250,36 +188,17 @@ function App() {
         )
       };
       updateDataAndSave(newData);
-    } else if (draggedType === 'department' && (targetDeptId === null || targetDeptId === '')) {
-      // Reordenar departamentos (opcional)
-      const draggedDeptId = parseInt(draggedId, 10);
-      if (isNaN(draggedDeptId)) {
-        console.error('ID do departamento inválido:', draggedId);
-        return;
-      }
-      
-      const draggedDept = data.departments.find(d => d.id === draggedDeptId);
-      if (draggedDept) {
-        const newData = {
-          ...data,
-          departments: [
-            ...data.departments.filter(d => d.id !== draggedDeptId),
-            draggedDept
-          ]
-        };
-        updateDataAndSave(newData);
-      }
     }
   };
 
-  // Handler para pool drop
+  // Handler para pool drop (movimentação livre)
   const handlePoolDrop = (e) => {
     e.preventDefault();
     e.stopPropagation();
     e.currentTarget.classList.remove('drop-hover');
     
     const draggedId = e.dataTransfer.getData('text/plain');
-    console.log('Pool drop:', draggedId);
+    console.log('🏊 Pool drop:', draggedId);
     
     if (draggedId && draggedType === 'employee') {
       handleDrop(draggedId, null);
@@ -299,7 +218,6 @@ function App() {
     e.preventDefault();
     e.stopPropagation();
     
-    // Só remove o highlight se estiver realmente saindo do pool
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX;
     const y = e.clientY;
@@ -320,25 +238,93 @@ function App() {
     updateDataAndSave(newData);
   };
 
-  // Handler para resetar
-  const handleReset = () => {
-    if (!window.confirm('Tem certeza? Isso apagará tudo!')) return;
-    resetData();
+  // Handlers dos modais
+  const openEmployeeModal = (employeeId = null) => {
+    if (employeeId) {
+      const employee = data.employees.find(emp => emp.id === employeeId);
+      setCurrentEmployee(employee);
+    } else {
+      setCurrentEmployee(null);
+    }
+    setEmployeeModalOpen(true);
   };
 
-  // Handler para exportar
-  const handleExport = () => {
-    const dataStr = JSON.stringify(data, null, 2);
-    const dataBlob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(dataBlob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'organograma_backup.json';
-    link.click();
-    URL.revokeObjectURL(url);
+  const openDepartmentModal = (deptId = null) => {
+    if (deptId) {
+      const department = data.departments.find(dept => dept.id === deptId);
+      setCurrentDepartment(department);
+    } else {
+      setCurrentDepartment(null);
+    }
+    setDepartmentModalOpen(true);
   };
 
-  // Funcionários sem departamento
+  const handleEmployeeSave = (employeeData) => {
+    let newData;
+    if (employeeData.id) {
+      // Editar funcionário existente
+      newData = {
+        ...data,
+        employees: data.employees.map(emp => 
+          emp.id === employeeData.id ? employeeData : emp
+        )
+      };
+    } else {
+      // Criar novo funcionário
+      const newId = Math.max(0, ...data.employees.map(emp => emp.id || 0)) + 1;
+      newData = {
+        ...data,
+        employees: [...data.employees, { ...employeeData, id: newId }]
+      };
+    }
+    updateDataAndSave(newData);
+  };
+
+  const handleDepartmentSave = (deptData) => {
+    let newData;
+    if (deptData.id) {
+      // Editar departamento existente
+      newData = {
+        ...data,
+        departments: data.departments.map(dept => 
+          dept.id === deptData.id ? deptData : dept
+        )
+      };
+    } else {
+      // Criar novo departamento
+      const newId = Math.max(0, ...data.departments.map(dept => dept.id || 0)) + 1;
+      newData = {
+        ...data,
+        departments: [...data.departments, { ...deptData, id: newId }]
+      };
+    }
+    updateDataAndSave(newData);
+  };
+
+  const handleEmployeeRemove = (employeeId) => {
+    if (window.confirm('Tem certeza que deseja remover este funcionário?')) {
+      const newData = {
+        ...data,
+        employees: data.employees.filter(emp => emp.id !== employeeId)
+      };
+      updateDataAndSave(newData);
+    }
+  };
+
+  const handleDepartmentRemove = (deptId) => {
+    if (window.confirm('Tem certeza que deseja remover este departamento? Os funcionários serão movidos para o pool.')) {
+      const newData = {
+        ...data,
+        departments: data.departments.filter(dept => dept.id !== deptId),
+        employees: data.employees.map(emp => 
+          emp.dept === deptId ? { ...emp, dept: null } : emp
+        )
+      };
+      updateDataAndSave(newData);
+    }
+  };
+
+  // Funcionários sem departamento (pool)
   const poolEmployees = data.employees.filter(emp => !emp.dept);
 
   return (
@@ -355,6 +341,60 @@ function App() {
             ✕
           </button>
         )}
+      </div>
+
+      {/* Header */}
+      <div className="main-title">
+        <h1>
+          {editingTitle === 'title' ? (
+            <input
+              ref={titleInputRef}
+              type="text"
+              value={tempTitle}
+              onChange={(e) => setTempTitle(e.target.value)}
+              onBlur={finishEditingTitle}
+              onKeyDown={handleTitleKeyDown}
+              style={{ 
+                background: 'transparent', 
+                border: 'none', 
+                color: 'white',
+                fontSize: 'inherit',
+                fontWeight: 'inherit',
+                textAlign: 'center',
+                width: '100%'
+              }}
+            />
+          ) : (
+            <span onClick={() => startEditingTitle('title')}>
+              {data.title}
+            </span>
+          )}
+        </h1>
+        <p>
+          {editingTitle === 'subtitle' ? (
+            <input
+              ref={titleInputRef}
+              type="text"
+              value={tempTitle}
+              onChange={(e) => setTempTitle(e.target.value)}
+              onBlur={finishEditingTitle}
+              onKeyDown={handleTitleKeyDown}
+              style={{ 
+                background: 'transparent', 
+                border: 'none', 
+                color: 'white',
+                fontSize: 'inherit',
+                fontWeight: 'inherit',
+                textAlign: 'center',
+                width: '100%'
+              }}
+            />
+          ) : (
+            <span onClick={() => startEditingTitle('subtitle')}>
+              {data.subtitle}
+            </span>
+          )}
+        </p>
       </div>
 
       {/* Actions */}
@@ -381,85 +421,96 @@ function App() {
             value={newEmployee.dept}
             onChange={handleNewEmployeeChange}
           >
-            <option value="">Pool</option>
+            <option value="">Pool (sem departamento)</option>
             {data.departments.map(dep => (
               <option key={dep.id} value={dep.id}>
                 {dep.name}
               </option>
             ))}
           </select>
-          <button className="btn" type="submit">Adicionar</button>
+          <button type="submit" className="btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+            </svg>
+            Adicionar
+          </button>
         </form>
-        <button className="btn" onClick={addDepartment}>➕ Departamento</button>
-        <button className="btn" onClick={handleReset}>🔄 Resetar</button>
-        <button className="btn" onClick={handleExport}>💾 Exportar</button>
-        <button className="btn" onClick={testConnection}>🔧 Testar Conexão</button>
-      </div>
-
-      {/* Main Title */}
-      <div className="main-title">
-        {editingTitle === 'title' ? (
-          <input
-            ref={titleInputRef}
-            type="text"
-            value={tempTitle}
-            onChange={(e) => setTempTitle(e.target.value)}
-            onBlur={finishEditingTitle}
-            onKeyDown={handleTitleKeyDown}
-            style={{ fontSize: '1.3em', fontWeight: 'bold' }}
-          />
-        ) : (
-          <h1 onClick={() => startEditingTitle('title')}>
-            {data.title}
-          </h1>
-        )}
         
-        {editingTitle === 'subtitle' ? (
-          <input
-            ref={titleInputRef}
-            type="text"
-            value={tempTitle}
-            onChange={(e) => setTempTitle(e.target.value)}
-            onBlur={finishEditingTitle}
-            onKeyDown={handleTitleKeyDown}
-            style={{ marginLeft: '18px', fontSize: '1.05em' }}
-          />
-        ) : (
-          <p 
-            onClick={() => startEditingTitle('subtitle')}
-            style={{ marginLeft: '18px', fontSize: '1.05em' }}
-          >
-            {data.subtitle}
-          </p>
-        )}
+        <button className="btn" onClick={handleAddDepartment}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+          </svg>
+          Departamento
+        </button>
+        
+        <button className="btn" onClick={resetData}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+          </svg>
+          Resetar
+        </button>
+        
+        <button className="btn" onClick={() => {
+          const dataStr = JSON.stringify(data, null, 2);
+          const dataBlob = new Blob([dataStr], { type: 'application/json' });
+          const url = URL.createObjectURL(dataBlob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = 'organograma.json';
+          link.click();
+        }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
+          </svg>
+          Exportar
+        </button>
+        
+        <button className="btn" onClick={testConnection}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M10,17L6,13L7.41,11.59L10,14.17L16.59,7.58L18,9L10,17Z"/>
+          </svg>
+          Testar Conexão
+        </button>
       </div>
 
-      {/* Employee List */}
-      <div className="employee-list">
-        {/* Employee Pool */}
+      {/* Layout Principal */}
+      <div className="main-layout">
+        {/* Pool de Funcionários */}
         <div 
           className="employee-pool"
           onDrop={handlePoolDrop}
           onDragOver={handlePoolDragOver}
           onDragLeave={handlePoolDragLeave}
         >
-          <div style={{ marginBottom: '8px', fontWeight: 'bold' }}>
-            Funcionários sem departamento
+          <div className="pool-header">
+            <h3>🏊 Banco de Talentos</h3>
+            <span className="pool-count">{poolEmployees.length}</span>
           </div>
-          {poolEmployees.map(emp => (
-            <Employee
-              key={emp.id}
-              employee={emp}
-              departments={data.departments}
-              onDragStart={handleDragStart}
-              onDragEnd={handleDragEnd}
-              onEdit={openEmployeeModal}
-              onRemove={removeEmployee}
-            />
-          ))}
+          
+          {poolEmployees.length === 0 ? (
+            <div className="empty-pool">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" style={{ opacity: 0.3 }}>
+                <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <rect x="8" y="2" width="8" height="4" rx="1" ry="1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              <span>Arraste funcionários aqui ou adicione novos</span>
+            </div>
+          ) : (
+            poolEmployees.map(emp => (
+              <Employee
+                key={emp.id}
+                employee={emp}
+                departments={data.departments}
+                onDragStart={handleDragStart}
+                onDragEnd={handleDragEnd}
+                onEdit={openEmployeeModal}
+                onRemove={handleEmployeeRemove}
+              />
+            ))
+          )}
         </div>
 
-        {/* Departments */}
+        {/* Departamentos */}
         <div className="departments">
           {data.departments.map(dept => (
             <Department
@@ -471,12 +522,21 @@ function App() {
               onDragStart={handleDragStart}
               onDragEnd={handleDragEnd}
               onEmployeeEdit={openEmployeeModal}
-              onEmployeeRemove={removeEmployee}
+              onEmployeeRemove={handleEmployeeRemove}
               onDepartmentEdit={openDepartmentModal}
-              onDepartmentRemove={removeDepartment}
+              onDepartmentRemove={handleDepartmentRemove}
               onTitleEdit={handleDepartmentTitleEdit}
             />
           ))}
+          
+          {data.departments.length === 0 && (
+            <div className="empty-department">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" style={{ opacity: 0.3 }}>
+                <path d="M3 21h18l-9-18-9 18zM12 17h.01M12 10v4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              <span>Clique em "Departamento" para criar o primeiro departamento</span>
+            </div>
+          )}
         </div>
       </div>
 

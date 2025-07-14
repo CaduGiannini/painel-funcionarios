@@ -14,7 +14,7 @@ const DepartmentModal = ({
     location: '',
     budget: '',
     goals: '',
-    color: '#667eea'
+    color: '#3b82f6'
   });
 
   useEffect(() => {
@@ -26,7 +26,7 @@ const DepartmentModal = ({
         location: department.location || '',
         budget: department.budget || '',
         goals: department.goals || '',
-        color: department.color || '#667eea'
+        color: department.color || '#3b82f6'
       });
     }
   }, [department]);
@@ -62,10 +62,15 @@ const DepartmentModal = ({
   };
 
   const predefinedColors = [
-    '#667eea', '#764ba2', '#f093fb', '#f5576c',
-    '#4facfe', '#00f2fe', '#43e97b', '#38f9d7',
-    '#ffa726', '#ffcc02', '#fa709a', '#fee140',
-    '#a8edea', '#fed6e3', '#d299c2', '#fef9d7'
+    '#3b82f6', '#1d4ed8', '#1e40af', '#1e3a8a',
+    '#0ea5e9', '#0284c7', '#0369a1', '#075985',
+    '#06b6d4', '#0891b2', '#0e7490', '#155e75',
+    '#0d9488', '#0f766e', '#134e4a', '#064e3b',
+    '#64748b', '#475569', '#334155', '#1e293b',
+    '#6366f1', '#4f46e5', '#4338ca', '#3730a3',
+    '#8b5cf6', '#7c3aed', '#6d28d9', '#5b21b6',
+    '#a855f7', '#9333ea', '#7e22ce', '#6b21a8',
+    '#ec4899', '#db2777', '#be185d', '#9d174d'
   ];
 
   return (
