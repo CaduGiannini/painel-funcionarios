@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 const Employee = ({ 
   employee, 
@@ -9,10 +9,11 @@ const Employee = ({
   onRemove 
 }) => {
   const dept = departments.find(d => d.id === employee.dept);
+  const [imageError, setImageError] = useState(false);
   
   const handleDragStart = (e) => {
     e.target.classList.add('dragging');
-    e.dataTransfer.setData('text/plain', employee.id);
+    e.dataTransfer.setData('text/plain', employee.id.toString());
     e.dataTransfer.effectAllowed = 'move';
     if (onDragStart) onDragStart('employee', employee.id);
   };
@@ -22,38 +23,80 @@ const Employee = ({
     if (onDragEnd) onDragEnd();
   };
 
+  const handleImageError = () => {
+    setImageError(true);
+  };
+
+  const getInitials = (name) => {
+    if (!name) return '?';
+    return name
+      .split(' ')
+      .map(word => word.charAt(0))
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
   const employeeStyle = {};
   if (dept && dept.color) {
-    employeeStyle.background = `linear-gradient(135deg, ${dept.color} 0%, ${dept.color}CC 100%)`;
+    employeeStyle.borderLeftColor = dept.color;
+    employeeStyle.background = `linear-gradient(135deg, ${dept.color}10 0%, ${dept.color}05 100%)`;
   }
 
   return (
     <div 
-      className="employee"
+      className="employee-card"
       draggable
       data-id={employee.id}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
       style={employeeStyle}
     >
-      <div>
-        <div style={{ fontWeight: 'bold' }}>{employee.name}</div>
-        <div style={{ opacity: 0.75, fontSize: '0.85em' }}>{employee.role}</div>
+      <div className="employee-avatar">
+        {employee.photo && !imageError ? (
+          <img 
+            src={employee.photo} 
+            alt={employee.name}
+            onError={handleImageError}
+            className="employee-photo"
+          />
+        ) : (
+          <div className="employee-initials" style={{ 
+            backgroundColor: dept?.color || '#667eea',
+            color: 'white'
+          }}>
+            {getInitials(employee.name)}
+          </div>
+        )}
+        <div className="employee-status"></div>
       </div>
-      <div>
+      
+      <div className="employee-info">
+        <div className="employee-name">{employee.name}</div>
+        <div className="employee-role">{employee.role}</div>
+        {employee.email && (
+          <div className="employee-email">{employee.email}</div>
+        )}
+      </div>
+      
+      <div className="employee-actions">
         <button 
           className="edit-btn" 
           onClick={() => onEdit(employee.id)}
           title="Editar funcionário"
         >
-          ✏️
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+          </svg>
         </button>
         <button 
           className="remove-btn" 
           onClick={() => onRemove(employee.id)}
           title="Remover funcionário"
         >
-          ✖
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+          </svg>
         </button>
       </div>
     </div>

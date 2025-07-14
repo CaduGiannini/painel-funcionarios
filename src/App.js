@@ -187,30 +187,40 @@ function App() {
 
   // Handlers de drag and drop
   const handleDragStart = (type, id) => {
+    console.log('Drag start:', type, id);
     setDraggedType(type);
   };
 
   const handleDragEnd = () => {
+    console.log('Drag end');
     setDraggedType(null);
   };
 
   const handleDrop = (draggedId, targetDeptId) => {
+    console.log('Drop handler:', draggedId, targetDeptId, draggedType);
+    
     if (draggedType === 'employee') {
+      const draggedIdNum = parseInt(draggedId, 10);
+      const targetDeptIdNum = targetDeptId ? parseInt(targetDeptId, 10) : null;
+      
+      console.log('Moving employee', draggedIdNum, 'to dept', targetDeptIdNum);
+      
       const newData = {
         ...data,
         employees: data.employees.map(emp => 
-          emp.id === draggedId ? { ...emp, dept: targetDeptId || null } : emp
+          emp.id === draggedIdNum ? { ...emp, dept: targetDeptIdNum } : emp
         )
       };
       updateDataAndSave(newData);
     } else if (draggedType === 'department' && targetDeptId === null) {
       // Reordenar departamentos (opcional)
-      const draggedDept = data.departments.find(d => d.id === draggedId);
+      const draggedDeptId = parseInt(draggedId, 10);
+      const draggedDept = data.departments.find(d => d.id === draggedDeptId);
       if (draggedDept) {
         const newData = {
           ...data,
           departments: [
-            ...data.departments.filter(d => d.id !== draggedId),
+            ...data.departments.filter(d => d.id !== draggedDeptId),
             draggedDept
           ]
         };
@@ -222,13 +232,20 @@ function App() {
   // Handler para pool drop
   const handlePoolDrop = (e) => {
     e.preventDefault();
+    e.stopPropagation();
     e.currentTarget.classList.remove('drop-hover');
+    
     const draggedId = e.dataTransfer.getData('text/plain');
-    handleDrop(draggedId, null);
+    console.log('Pool drop:', draggedId);
+    
+    if (draggedId && draggedType === 'employee') {
+      handleDrop(draggedId, null);
+    }
   };
 
   const handlePoolDragOver = (e) => {
     e.preventDefault();
+    e.stopPropagation();
     e.dataTransfer.dropEffect = 'move';
     if (draggedType === 'employee') {
       e.currentTarget.classList.add('drop-hover');
@@ -236,7 +253,17 @@ function App() {
   };
 
   const handlePoolDragLeave = (e) => {
-    e.currentTarget.classList.remove('drop-hover');
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Só remove o highlight se estiver realmente saindo do pool
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX;
+    const y = e.clientY;
+    
+    if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+      e.currentTarget.classList.remove('drop-hover');
+    }
   };
 
   // Handler para edição rápida de título de departamento
