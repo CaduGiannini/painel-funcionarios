@@ -326,7 +326,7 @@ function App() {
   };
 
   // Funcionários sem departamento (pool)
-  const poolEmployees = data.employees.filter(emp => !emp.dept);
+  const poolEmployees = data.employees.filter(emp => emp.dept === null || emp.dept === '' || emp.dept === undefined);
 
   return (
     <div className="container">
