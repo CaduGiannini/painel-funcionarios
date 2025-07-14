@@ -1,18 +1,41 @@
-# Organograma Interativo - React
+# 🏢 Organograma Interativo - React
 
-Uma aplicação React para gerenciamento de funcionários e departamentos com funcionalidade de drag-and-drop e sincronização em tempo real via Firebase.
+Uma aplicação React moderna e elegante para gerenciamento de funcionários e departamentos com design profissional, fotos de perfil, drag & drop intuitivo e sincronização em tempo real.
 
-## 🚀 Funcionalidades
+## ✨ Funcionalidades Principais
 
-- ✅ **Drag & Drop** - Arraste funcionários entre departamentos
-- ✅ **Edição em tempo real** - Clique duplo para editar títulos
-- ✅ **Modais de edição** - Edite informações detalhadas de funcionários e departamentos
-- ✅ **Firebase Realtime Database** - Sincronização automática entre dispositivos
-- ✅ **Cores personalizadas** - Defina cores para cada departamento
-- ✅ **Exportação de dados** - Faça backup dos dados em JSON
-- ✅ **Interface responsiva** - Funciona em desktop e mobile
-- ✅ **Status de conexão** - Acompanhe o status da conexão com Firebase
-- ✅ **Deploy automatizado** - GitHub Pages com GitHub Actions
+### 👤 **Sistema de Perfis Completo**
+- ✅ **Fotos de perfil** - Upload por drag & drop ou clique, com preview
+- ✅ **Avatares inteligentes** - Iniciais coloridas quando não há foto
+- ✅ **Informações expandidas** - Nome, cargo, email, telefone, observações
+
+### 🎨 **Design Moderno e Profissional**
+- ✅ **Interface glass-morphism** - Efeitos de vidro e blur elegantes
+- ✅ **Gradientes animados** - Background dinâmico com cores vibrantes
+- ✅ **Animações suaves** - Hover effects e transições profissionais
+- ✅ **Tipografia moderna** - Fonte Inter para melhor legibilidade
+
+### 🔧 **Drag & Drop Aprimorado**
+- ✅ **Sistema robusto** - Funcionamento corrigido e confiável
+- ✅ **Feedback visual** - Áreas destacadas durante o arraste
+- ✅ **Detecção precisa** - Controle fino de entrada e saída
+
+### 🏢 **Departamentos Editáveis**
+- ✅ **Edição inline** - Duplo clique para editar nomes
+- ✅ **Campos expandidos** - Gerente, localização, orçamento, metas
+- ✅ **Color picker avançado** - 16 cores predefinidas + personalizada
+- ✅ **Estatísticas visuais** - Contador de funcionários por departamento
+
+### 📱 **Responsividade Total**
+- ✅ **Design adaptativo** - Perfeito em qualquer dispositivo
+- ✅ **Touch-friendly** - Otimizado para dispositivos móveis
+- ✅ **Modais responsivos** - Formulários que se adaptam à tela
+
+### 🔄 **Funcionalidades Técnicas**
+- ✅ **Firebase Realtime Database** - Sincronização automática
+- ✅ **Exportação de dados** - Backup em formato JSON
+- ✅ **Status de conexão** - Monitoramento em tempo real
+- ✅ **Deploy automatizado** - GitHub Pages com Actions
 
 ## 📋 Pré-requisitos
 
