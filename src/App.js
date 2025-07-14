@@ -29,6 +29,30 @@ function App() {
   
   // Estados de drag and drop
   const [draggedType, setDraggedType] = useState(null);
+  
+  // Estado para controlar visibilidade da barra de status
+  const [statusVisible, setStatusVisible] = useState(false);
+
+  // Auto-hide da barra de status após 5 segundos para erros
+  React.useEffect(() => {
+    if (status.type === 'error') {
+      setStatusVisible(true);
+      const timer = setTimeout(() => {
+        setStatusVisible(false);
+      }, 5000);
+      return () => clearTimeout(timer);
+    } else if (status.type === 'connected' && status.message === 'Dados salvos com sucesso!') {
+      setStatusVisible(true);
+      const timer = setTimeout(() => {
+        setStatusVisible(false);
+      }, 2000);
+      return () => clearTimeout(timer);
+    } else if (status.type !== 'connected') {
+      setStatusVisible(true);
+    } else {
+      setStatusVisible(false);
+    }
+  }, [status]);
 
   // Função auxiliar para atualizar dados e salvar
   const updateDataAndSave = useCallback((newData) => {
@@ -201,9 +225,23 @@ function App() {
     
     if (draggedType === 'employee') {
       const draggedIdNum = parseInt(draggedId, 10);
-      const targetDeptIdNum = targetDeptId ? parseInt(targetDeptId, 10) : null;
+      
+      // Validação mais robusta para o departamento de destino
+      let targetDeptIdNum = null;
+      if (targetDeptId && targetDeptId !== '' && targetDeptId !== 'null' && targetDeptId !== 'undefined') {
+        const parsed = parseInt(targetDeptId, 10);
+        if (!isNaN(parsed)) {
+          targetDeptIdNum = parsed;
+        }
+      }
       
       console.log('Moving employee', draggedIdNum, 'to dept', targetDeptIdNum);
+      
+      // Validação adicional para garantir que não temos NaN
+      if (isNaN(draggedIdNum)) {
+        console.error('ID do funcionário inválido:', draggedId);
+        return;
+      }
       
       const newData = {
         ...data,
@@ -212,9 +250,14 @@ function App() {
         )
       };
       updateDataAndSave(newData);
-    } else if (draggedType === 'department' && targetDeptId === null) {
+    } else if (draggedType === 'department' && (targetDeptId === null || targetDeptId === '')) {
       // Reordenar departamentos (opcional)
       const draggedDeptId = parseInt(draggedId, 10);
+      if (isNaN(draggedDeptId)) {
+        console.error('ID do departamento inválido:', draggedId);
+        return;
+      }
+      
       const draggedDept = data.departments.find(d => d.id === draggedDeptId);
       if (draggedDept) {
         const newData = {
@@ -301,8 +344,17 @@ function App() {
   return (
     <div className="container">
       {/* Status de Conexão */}
-      <div className={`status-bar ${status.type} ${status.type !== 'connected' ? 'show' : ''}`}>
+      <div className={`status-bar ${status.type} ${statusVisible ? 'show' : ''}`}>
         <span>{status.message}</span>
+        {statusVisible && (
+          <button 
+            className="status-close" 
+            onClick={() => setStatusVisible(false)}
+            title="Fechar"
+          >
+            ✕
+          </button>
+        )}
       </div>
 
       {/* Actions */}

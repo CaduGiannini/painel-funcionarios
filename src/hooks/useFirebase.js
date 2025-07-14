@@ -49,6 +49,33 @@ export const useFirebase = () => {
     });
   }, [updateStatus]);
 
+  // Função para limpar dados inválidos
+  const cleanData = (data) => {
+    const cleanedData = JSON.parse(JSON.stringify(data));
+    
+    // Limpar funcionários
+    if (cleanedData.employees) {
+      cleanedData.employees = cleanedData.employees.map(emp => ({
+        ...emp,
+        // Garantir que dept seja null se for NaN ou inválido
+        dept: (emp.dept === null || emp.dept === undefined || isNaN(emp.dept)) ? null : emp.dept,
+        // Garantir que ID seja um número válido
+        id: isNaN(emp.id) ? Date.now() + Math.random() : emp.id
+      }));
+    }
+    
+    // Limpar departamentos
+    if (cleanedData.departments) {
+      cleanedData.departments = cleanedData.departments.map(dept => ({
+        ...dept,
+        // Garantir que ID seja um número válido
+        id: isNaN(dept.id) ? Date.now() + Math.random() : dept.id
+      }));
+    }
+    
+    return cleanedData;
+  };
+
   // Função para salvar dados
   const saveData = useCallback(async (newData) => {
     if (isSaving || !database || !status.isConnected) {
@@ -64,8 +91,13 @@ export const useFirebase = () => {
     updateStatus('Salvando dados...', 'connecting');
     
     try {
+      // Limpar dados antes de salvar
+      const cleanedData = cleanData(newData);
+      console.log('Dados originais:', newData);
+      console.log('Dados limpos para salvar:', cleanedData);
+      
       const dataRef = ref(database, dataPath);
-      await set(dataRef, newData);
+      await set(dataRef, cleanedData);
       console.log('Dados salvos com sucesso no Firebase');
       updateStatus('Dados salvos com sucesso!', 'connected');
     } catch (error) {
