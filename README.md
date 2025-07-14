@@ -1,924 +1,254 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Gerenciamento de Funcionários</title>
+    <title>Painel de Funcionários</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: #f1f1f1;
         }
-
         .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            overflow: hidden;
-        }
-
-        .header {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-            color: white;
-            padding: 30px;
-            text-align: center;
-            position: relative;
-        }
-
-        .header h1 {
-            font-size: 2.5em;
-            margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-            cursor: pointer;
-            padding: 10px;
+            max-width: 1000px;
+            margin: 30px auto;
+            background: #fff;
             border-radius: 10px;
-            transition: all 0.3s ease;
+            box-shadow: 0 0 20px #0002;
+            padding: 32px;
         }
-
-        .header h1:hover {
-            background: rgba(255,255,255,0.1);
-        }
-
-        .header p {
-            font-size: 1.2em;
-            opacity: 0.9;
-            cursor: pointer;
-            padding: 5px;
-            border-radius: 5px;
-            transition: all 0.3s ease;
-        }
-
-        .header p:hover {
-            background: rgba(255,255,255,0.1);
-        }
-
-        .edit-input {
-            background: transparent;
-            border: 2px solid rgba(255,255,255,0.3);
-            color: white;
-            font-size: inherit;
-            font-family: inherit;
-            font-weight: inherit;
-            text-align: center;
-            border-radius: 10px;
-            padding: 10px;
-            width: 100%;
-        }
-
-        .edit-input:focus {
-            outline: none;
-            border-color: rgba(255,255,255,0.8);
-            background: rgba(255,255,255,0.1);
-        }
-
-        .edit-input::placeholder {
-            color: rgba(255,255,255,0.7);
-        }
-
-        .controls {
-            position: absolute;
-            top: 20px;
-            right: 20px;
+        .actions, .main-title {
             display: flex;
             gap: 10px;
+            margin-bottom: 16px;
+            align-items: center;
         }
-
-        .btn {
-            background: rgba(255,255,255,0.2);
-            color: white;
-            border: none;
-            padding: 10px 15px;
-            border-radius: 25px;
+        .main-title h1, .main-title p {
+            margin: 0;
             cursor: pointer;
-            font-size: 0.9em;
-            transition: all 0.3s ease;
-            backdrop-filter: blur(10px);
         }
-
-        .btn:hover {
-            background: rgba(255,255,255,0.3);
-            transform: translateY(-2px);
+        .employee-list, .departments {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            justify-content: center;
         }
-
-        .main-content {
-            padding: 40px;
+        .employee-pool, .department {
+            background: #f9f9f9;
+            border: 2px dashed #ddd;
+            min-width: 210px;
+            min-height: 120px;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 20px;
+            box-sizing: border-box;
         }
-
-        .departments {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 30px;
-            margin-bottom: 40px;
+        .employee-pool {
+            flex: 1;
         }
-
         .department {
-            background: #f8f9fa;
-            border-radius: 15px;
-            padding: 25px;
-            min-height: 200px;
-            border: 3px dashed #e9ecef;
-            transition: all 0.3s ease;
+            flex: 1;
             position: relative;
         }
-
-        .department:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-        }
-
-        .department.drag-over {
-            border-color: #4facfe;
-            background: #e7f3ff;
-            transform: scale(1.02);
-        }
-
         .department-title {
-            font-size: 1.5em;
             font-weight: bold;
-            color: #2c3e50;
-            margin-bottom: 20px;
-            text-align: center;
-            padding: 10px;
-            border-bottom: 2px solid #e9ecef;
-            cursor: pointer;
-            border-radius: 10px;
-            transition: all 0.3s ease;
-        }
-
-        .department-title:hover {
-            background: #e9ecef;
-        }
-
-        .department-title-input {
-            background: transparent;
-            border: 2px solid #4facfe;
-            color: #2c3e50;
-            font-size: inherit;
-            font-family: inherit;
-            font-weight: inherit;
-            text-align: center;
-            border-radius: 10px;
-            padding: 10px;
-            width: 100%;
-        }
-
-        .department-title-input:focus {
-            outline: none;
-            border-color: #00f2fe;
-            background: #f8f9fa;
-        }
-
-        .employee-pool {
-            background: #fff;
-            border-radius: 15px;
-            padding: 25px;
-            margin-bottom: 30px;
-            border: 2px solid #e9ecef;
-        }
-
-        .pool-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-
-        .pool-title {
-            font-size: 1.3em;
-            color: #2c3e50;
-            cursor: pointer;
-            padding: 10px;
-            border-radius: 10px;
-            transition: all 0.3s ease;
-        }
-
-        .pool-title:hover {
-            background: #f8f9fa;
-        }
-
-        .add-employee-btn {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-            color: white;
-            border: none;
-            padding: 12px 20px;
-            border-radius: 25px;
-            cursor: pointer;
-            font-size: 1em;
-            font-weight: bold;
-            transition: all 0.3s ease;
+            margin-bottom: 6px;
             display: flex;
             align-items: center;
             gap: 8px;
+            cursor: pointer;
         }
-
-        .add-employee-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        .remove-btn {
+            background: #e74c3c;
+            border: none;
+            color: #fff;
+            border-radius: 50%;
+            width: 22px; height: 22px;
+            font-size: 13px;
+            cursor: pointer;
+            margin-left: 4px;
         }
-
-        .employees {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            justify-content: center;
-        }
-
-        .employee-list {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            justify-content: center;
-        }
-
         .employee {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            padding: 15px;
-            border-radius: 15px;
+            border-radius: 6px;
+            padding: 8px 12px;
+            margin: 6px 0;
             cursor: grab;
-            transition: all 0.3s ease;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-            user-select: none;
-            position: relative;
-            min-width: 200px;
-        }
-
-        .employee:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
-        }
-
-        .employee:active {
-            cursor: grabbing;
-            transform: scale(0.95);
-        }
-
-        .employee.dragging {
-            opacity: 0.5;
-            transform: rotate(5deg);
-        }
-
-        .employee-photo {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            background: rgba(255,255,255,0.2);
             display: flex;
             align-items: center;
-            justify-content: center;
-            margin: 0 auto 15px;
-            font-size: 24px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .employee-photo:hover {
-            background: rgba(255,255,255,0.3);
-        }
-
-        .employee-photo img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            border-radius: 50%;
-        }
-
-        .employee-photo input[type="file"] {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            opacity: 0;
-            cursor: pointer;
-        }
-
-        .employee-info {
-            text-align: center;
-        }
-
-        .employee-name {
-            font-weight: bold;
-            margin-bottom: 5px;
-            cursor: pointer;
-            padding: 5px;
-            border-radius: 5px;
-            transition: all 0.3s ease;
-        }
-
-        .employee-name:hover {
-            background: rgba(255,255,255,0.1);
-        }
-
-        .employee-role {
-            font-size: 0.9em;
-            opacity: 0.8;
-            cursor: pointer;
-            padding: 3px;
-            border-radius: 3px;
-            transition: all 0.3s ease;
-        }
-
-        .employee-role:hover {
-            background: rgba(255,255,255,0.1);
-        }
-
-        .employee-edit-input {
-            background: rgba(255,255,255,0.2);
-            border: 1px solid rgba(255,255,255,0.3);
-            color: white;
-            font-size: inherit;
-            font-family: inherit;
-            font-weight: inherit;
-            text-align: center;
-            border-radius: 5px;
-            padding: 5px;
-            width: 100%;
-        }
-
-        .employee-edit-input:focus {
-            outline: none;
-            border-color: rgba(255,255,255,0.8);
-            background: rgba(255,255,255,0.3);
-        }
-
-        .employee-edit-input::placeholder {
-            color: rgba(255,255,255,0.7);
-        }
-
-        .employee-controls {
-            position: absolute;
-            top: 5px;
-            right: 5px;
-            display: flex;
-            gap: 5px;
-        }
-
-        .employee-btn {
-            background: rgba(255,255,255,0.2);
-            border: none;
-            color: white;
-            padding: 5px 8px;
-            border-radius: 50%;
-            cursor: pointer;
-            font-size: 12px;
-            transition: all 0.3s ease;
-            width: 25px;
-            height: 25px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .employee-btn:hover {
-            background: rgba(255,255,255,0.3);
-        }
-
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 20px;
-            margin-top: 30px;
-        }
-
-        .stat-card {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            color: white;
-            padding: 20px;
-            border-radius: 15px;
-            text-align: center;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        }
-
-        .stat-number {
-            font-size: 2em;
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-
-        .stat-label {
-            font-size: 0.9em;
-            opacity: 0.9;
-        }
-
-        .empty-message {
-            text-align: center;
-            color: #6c757d;
-            font-style: italic;
-            margin-top: 20px;
-        }
-
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.5);
-            backdrop-filter: blur(5px);
-        }
-
-        .modal-content {
-            background: white;
-            margin: 15% auto;
-            padding: 30px;
-            border-radius: 20px;
-            width: 90%;
-            max-width: 500px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
-        }
-
-        .modal-header {
-            display: flex;
             justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
+            gap: 8px;
+            box-shadow: 0 2px 5px #0001;
         }
-
-        .close {
-            color: #aaa;
-            font-size: 28px;
-            font-weight: bold;
-            cursor: pointer;
+        .employee span {
+            pointer-events: none;
         }
-
-        .close:hover {
-            color: #000;
+        .employee .remove-btn {
+            margin-left: 8px;
+            background: #c0392b;
         }
-
-        .form-group {
-            margin-bottom: 20px;
+        .add-form input, .add-form select {
+            padding: 5px 8px;
+            margin-right: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
         }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-            color: #2c3e50;
-        }
-
-        .form-group input {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #e9ecef;
-            border-radius: 10px;
-            font-size: 16px;
-            transition: all 0.3s ease;
-        }
-
-        .form-group input:focus {
-            outline: none;
-            border-color: #4facfe;
-        }
-
-        .form-btn {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-            color: white;
+        .btn {
+            background: #667eea;
+            color: #fff;
             border: none;
-            padding: 15px 30px;
-            border-radius: 25px;
+            padding: 7px 14px;
+            border-radius: 4px;
             cursor: pointer;
-            font-size: 16px;
             font-weight: bold;
-            width: 100%;
-            transition: all 0.3s ease;
         }
-
-        .form-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        .btn:hover {
+            background: #5a67d8;
         }
-
-        @media (max-width: 768px) {
-            .departments {
-                grid-template-columns: 1fr;
-            }
-            
-            .header h1 {
-                font-size: 2em;
-            }
-            
-            .main-content {
-                padding: 20px;
-            }
-
-            .controls {
-                position: static;
-                justify-content: center;
-                margin-top: 20px;
-            }
+        .drop-hover {
+            background: #e0e7ff !important;
+            border-color: #667eea !important;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <div class="controls">
-                <button class="btn" onclick="addDepartment()">➕ Departamento</button>
-                <button class="btn" onclick="resetAll()">🔄 Resetar</button>
-            </div>
-            <h1 onclick="editTitle(this)">🏢 Painel de Funcionários</h1>
-            <p onclick="editTitle(this)">Arraste e solte os funcionários nos departamentos</p>
-        </div>
-
-        <div class="main-content">
-            <div class="employee-pool">
-                <div class="pool-header">
-                    <div class="pool-title" id="poolTitle" onclick="editTitle(this)">👥 Funcionários Disponíveis</div>
-                    <button class="add-employee-btn" onclick="openAddEmployeeModal()">
-                        ➕ Adicionar Funcionário
-                    </button>
-                </div>
-                <div class="employees" id="employeePool">
-                    <div class="employee" draggable="true" data-id="1">
-                        <div class="employee-controls">
-                            <button class="employee-btn" onclick="deleteEmployee(this)" title="Excluir">🗑️</button>
-                        </div>
-                        <div class="employee-photo" onclick="changePhoto(this)">
-                            <input type="file" accept="image/*" onchange="handlePhotoUpload(this)">
-                            👤
-                        </div>
-                        <div class="employee-info">
-                            <div class="employee-name" onclick="editEmployeeField(this)">Ana Silva</div>
-                            <div class="employee-role" onclick="editEmployeeField(this)">Desenvolvedora</div>
-                        </div>
-                    </div>
-                    <div class="employee" draggable="true" data-id="2">
-                        <div class="employee-controls">
-                            <button class="employee-btn" onclick="deleteEmployee(this)" title="Excluir">🗑️</button>
-                        </div>
-                        <div class="employee-photo" onclick="changePhoto(this)">
-                            <input type="file" accept="image/*" onchange="handlePhotoUpload(this)">
-                            👤
-                        </div>
-                        <div class="employee-info">
-                            <div class="employee-name" onclick="editEmployeeField(this)">Carlos Santos</div>
-                            <div class="employee-role" onclick="editEmployeeField(this)">Designer</div>
-                        </div>
-                    </div>
-                    <div class="employee" draggable="true" data-id="3">
-                        <div class="employee-controls">
-                            <button class="employee-btn" onclick="deleteEmployee(this)" title="Excluir">🗑️</button>
-                        </div>
-                        <div class="employee-photo" onclick="changePhoto(this)">
-                            <input type="file" accept="image/*" onchange="handlePhotoUpload(this)">
-                            👤
-                        </div>
-                        <div class="employee-info">
-                            <div class="employee-name" onclick="editEmployeeField(this)">Maria Oliveira</div>
-                            <div class="employee-role" onclick="editEmployeeField(this)">Gerente</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="departments" id="departmentsContainer">
-                <div class="department" data-department="tecnologia">
-                    <div class="department-title" onclick="editDepartmentTitle(this)">💻 Tecnologia</div>
-                    <div class="employee-list"></div>
-                </div>
-
-                <div class="department" data-department="design">
-                    <div class="department-title" onclick="editDepartmentTitle(this)">🎨 Design</div>
-                    <div class="employee-list"></div>
-                </div>
-
-                <div class="department" data-department="gestao">
-                    <div class="department-title" onclick="editDepartmentTitle(this)">📊 Gestão</div>
-                    <div class="employee-list"></div>
-                </div>
-            </div>
-
-            <div class="stats">
-                <div class="stat-card">
-                    <div class="stat-number" id="totalEmployees">3</div>
-                    <div class="stat-label">Total de Funcionários</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="assignedEmployees">0</div>
-                    <div class="stat-label">Alocados</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="availableEmployees">3</div>
-                    <div class="stat-label">Disponíveis</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="activeDepartments">0</div>
-                    <div class="stat-label">Departamentos Ativos</div>
-                </div>
-            </div>
-        </div>
+<div class="container">
+    <div class="actions">
+        <form class="add-form" id="addEmployeeForm" style="display:flex;align-items:center;gap:8px;">
+            <input type="text" id="employeeName" placeholder="Nome do Funcionário" required>
+            <input type="text" id="employeeRole" placeholder="Cargo" required>
+            <select id="employeeDept">
+                <option value="">Pool</option>
+            </select>
+            <button class="btn" type="submit">Adicionar</button>
+        </form>
+        <button class="btn" onclick="addDepartment()">➕ Departamento</button>
+        <button class="btn" onclick="resetAll()">🔄 Resetar</button>
     </div>
-
-    <!-- Modal para adicionar funcionário -->
-    <div id="addEmployeeModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>Adicionar Novo Funcionário</h2>
-                <span class="close" onclick="closeModal()">&times;</span>
-            </div>
-            <div class="form-group">
-                <label for="employeeName">Nome:</label>
-                <input type="text" id="employeeName" placeholder="Digite o nome do funcionário">
-            </div>
-            <div class="form-group">
-                <label for="employeeRole">Cargo:</label>
-                <input type="text" id="employeeRole" placeholder="Digite o cargo do funcionário">
-            </div>
-            <div class="form-group">
-                <label for="employeePhoto">Foto (opcional):</label>
-                <input type="file" id="employeePhoto" accept="image/*">
-            </div>
-            <button class="form-btn" onclick="addEmployee()">Adicionar Funcionário</button>
-        </div>
+    <div class="main-title">
+        <h1 id="mainTitle" onclick="editTitle('mainTitle')">🏢 Painel de Funcionários</h1>
+        <p id="subtitle" onclick="editTitle('subtitle')" style="margin-left:18px; font-size:1.05em;">
+            Arraste e solte os funcionários nos departamentos
+        </p>
     </div>
+    <div class="employee-list">
+        <div class="employee-pool" id="employeePool" ondrop="onDrop(event, null)" ondragover="onDragOver(event)">
+            <div style="margin-bottom:8px;font-weight:bold;">Funcionários sem departamento</div>
+        </div>
+        <div class="departments" id="departments"></div>
+    </div>
+</div>
+<script>
+const LS_KEY = 'painelFuncionariosData';
 
-    <script>
-        let draggedElement = null;
-        let employeeCounter = 3;
-        let departmentCounter = 3;
+let data = {
+    title: '🏢 Painel de Funcionários',
+    subtitle: 'Arraste e solte os funcionários nos departamentos',
+    employeeCounter: 0,
+    employees: [],
+    departments: []
+};
 
-        // Inicializar quando a página carregar
-        document.addEventListener('DOMContentLoaded', function() {
-            initializeDragAndDrop();
-            updateStats();
-        });
+function saveData() {
+    localStorage.setItem(LS_KEY, JSON.stringify(data));
+}
 
-        function initializeDragAndDrop() {
-            const employees = document.querySelectorAll('.employee');
-            const departments = document.querySelectorAll('.department');
-            const employeePool = document.getElementById('employeePool');
+function loadData() {
+    const saved = localStorage.getItem(LS_KEY);
+    if (saved) data = JSON.parse(saved);
+}
 
-            // Eventos para os funcionários
-            employees.forEach(employee => {
-                addEmployeeEventListeners(employee);
-            });
+function refreshAll() {
+    // Título e subtítulo
+    document.getElementById('mainTitle').textContent = data.title;
+    document.getElementById('subtitle').textContent = data.subtitle;
+    // Lista de departamentos no select
+    const deptSelect = document.getElementById('employeeDept');
+    deptSelect.innerHTML = '<option value="">Pool</option>';
+    data.departments.forEach(dep => {
+        const opt = document.createElement('option');
+        opt.value = dep.id;
+        opt.textContent = dep.name;
+        deptSelect.appendChild(opt);
+    });
+    // Funcionários sem departamento
+    const poolDiv = document.getElementById('employeePool');
+    poolDiv.querySelectorAll('.employee').forEach(e=>e.remove());
+    data.employees.filter(e => !e.dept).forEach(emp => poolDiv.appendChild(renderEmployee(emp)));
+    // Departamentos
+    const deptsDiv = document.getElementById('departments');
+    deptsDiv.innerHTML = '';
+    data.departments.forEach(dep => {
+        const deptDiv = document.createElement('div');
+        deptDiv.className = 'department';
+        deptDiv.ondrop = e => onDrop(e, dep.id);
+        deptDiv.ondragover = onDragOver;
+        // Título editável
+        const titleDiv = document.createElement('div');
+        titleDiv.className = 'department-title';
+        titleDiv.innerHTML = `<span ondblclick="editDeptTitle('${dep.id}')">${dep.name}</span>
+            <button class='remove-btn' onclick="removeDepartment('${dep.id}')" title="Remover departamento">✖</button>`;
+        deptDiv.appendChild(titleDiv);
+        // Funcionários
+        data.employees.filter(e => e.dept === dep.id).forEach(emp => deptDiv.appendChild(renderEmployee(emp)));
+        deptsDiv.appendChild(deptDiv);
+    });
+}
 
-            // Eventos para os departamentos
-            departments.forEach(department => {
-                addDepartmentEventListeners(department);
-            });
+function renderEmployee(emp) {
+    const div = document.createElement('div');
+    div.className = 'employee';
+    div.draggable = true;
+    div.dataset.id = emp.id;
+    div.innerHTML = `
+        <span>${emp.name}</span>
+        <span style="opacity:.75;font-size:0.95em;">${emp.role}</span>
+        <button class="remove-btn" onclick="removeEmployee('${emp.id}')" title="Remover funcionário">✖</button>
+    `;
+    div.ondragstart = dragStart;
+    return div;
+}
 
-            // Eventos para o pool de funcionários
-            addDropEventListeners(employeePool, handlePoolDrop);
-        }
+// Edição de título/subtítulo
+function editTitle(id) {
+    const el = document.getElementById(id);
+    const old = el.textContent;
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.value = old;
+    input.style.fontSize = el.style.fontSize || '1.3em';
+    input.onblur = () => {
+        data[id === 'mainTitle' ? 'title' : 'subtitle'] = input.value;
+        saveData(); refreshAll();
+    };
+    input.onkeydown = e => {
+        if (e.key === 'Enter') input.blur();
+        if (e.key === 'Escape') { input.value = old; input.blur(); }
+    };
+    el.replaceWith(input);
+    input.focus();
+}
 
-        function addEmployeeEventListeners(employee) {
-            employee.addEventListener('dragstart', handleDragStart);
-            employee.addEventListener('dragend', handleDragEnd);
-        }
-
-        function addDepartmentEventListeners(department) {
-            addDropEventListeners(department, handleDrop);
-        }
-
-        function addDropEventListeners(element, dropHandler) {
-            element.addEventListener('dragover', handleDragOver);
-            element.addEventListener('dragenter', handleDragEnter);
-            element.addEventListener('dragleave', handleDragLeave);
-            element.addEventListener('drop', dropHandler);
-        }
-
-        function handleDragStart(e) {
-            draggedElement = this;
-            this.classList.add('dragging');
-            e.dataTransfer.effectAllowed = 'move';
-            e.dataTransfer.setData('text/html', this.outerHTML);
-        }
-
-        function handleDragEnd(e) {
-            this.classList.remove('dragging');
-            draggedElement = null;
-        }
-
-        function handleDragOver(e) {
-            e.preventDefault();
-            e.dataTransfer.dropEffect = 'move';
-        }
-
-        function handleDragEnter(e) {
-            e.preventDefault();
-            this.classList.add('drag-over');
-        }
-
-        function handleDragLeave(e) {
-            this.classList.remove('drag-over');
-        }
-
-        function handleDrop(e) {
-            e.preventDefault();
-            this.classList.remove('drag-over');
-
-            if (draggedElement) {
-                const employeeList = this.querySelector('.employee-list');
-                const clonedElement = draggedElement.cloneNode(true);
-                
-                addEmployeeEventListeners(clonedElement);
-                employeeList.appendChild(clonedElement);
-                draggedElement.remove();
-                
-                updateStats();
-            }
-        }
-
-        function handlePoolDrop(e) {
-            e.preventDefault();
-            this.classList.remove('drag-over');
-
-            if (draggedElement && draggedElement.parentNode.classList.contains('employee-list')) {
-                const clonedElement = draggedElement.cloneNode(true);
-                
-                addEmployeeEventListeners(clonedElement);
-                this.appendChild(clonedElement);
-                draggedElement.remove();
-                
-                updateStats();
-            }
-        }
-
-        function updateStats() {
-            const totalEmployees = document.querySelectorAll('.employee').length;
-            const assignedEmployees = document.querySelectorAll('.employee-list .employee').length;
-            const availableEmployees = document.querySelectorAll('#employeePool .employee').length;
-            const activeDepartments = document.querySelectorAll('.employee-list:not(:empty)').length;
-
-            document.getElementById('totalEmployees').textContent = totalEmployees;
-            document.getElementById('assignedEmployees').textContent = assignedEmployees;
-            document.getElementById('availableEmployees').textContent = availableEmployees;
-            document.getElementById('activeDepartments').textContent = activeDepartments;
-
-            // Mostrar mensagem se departamento estiver vazio
-            document.querySelectorAll('.department').forEach(dept => {
-                const employeeList = dept.querySelector('.employee-list');
-                if (employeeList.children.length === 0) {
-                    if (!employeeList.querySelector('.empty-message')) {
-                        const emptyMsg = document.createElement('div');
-                        emptyMsg.className = 'empty-message';
-                        emptyMsg.textContent = 'Arraste funcionários para cá';
-                        employeeList.appendChild(emptyMsg);
-                    }
-                } else {
-                    const emptyMsg = employeeList.querySelector('.empty-message');
-                    if (emptyMsg) {
-                        emptyMsg.remove();
-                    }
-                }
-            });
-        }
-
-        // Funções de edição
-        function editTitle(element) {
-            const currentText = element.textContent;
-            const input = document.createElement('input');
-            input.className = 'edit-input';
-            input.value = currentText;
-            input.onblur = function() {
-                element.textContent = this.value || currentText;
-                element.style.display = 'block';
-                this.remove();
-            };
-            input.onkeydown = function(e) {
-                if (e.key === 'Enter') {
-                    this.blur();
-                }
-            };
-            
-            element.style.display = 'none';
-            element.parentNode.insertBefore(input, element);
-            input.focus();
-            input.select();
-        }
-
-        function editDepartmentTitle(element) {
-            const currentText = element.textContent;
-            const input = document.createElement('input');
-            input.className = 'department-title-input';
-            input.value = currentText;
-            input.onblur = function() {
-                element.textContent = this.value || currentText;
-                element.style.display = 'block';
-                this.remove();
-            };
-            input.onkeydown = function(e) {
-                if (e.key === 'Enter') {
-                    this.blur();
-                }
-            };
-            
-            element.style.display = 'none';
-            element.parentNode.insertBefore(input, element);
-            input.focus();
-            input.select();
-        }
-
-        function editEmployeeField(element) {
-            const currentText = element.textContent;
-            const input = document.createElement('input');
-            input.className = 'employee-edit-input';
-            input.value = currentText;
-            input.onblur = function() {
-                element.textContent = this.value || currentText;
-                element.style.display = 'block';
-                this.remove();
-            };
-            input.onkeydown = function(e) {
-                if (e.key === 'Enter') {
-                    this.blur();
-                }
-            };
-            
-            element.style.display = 'none';
-            element.parentNode.insertBefore(input, element);
-            input.focus();
-            input.select();
-        }
-
-        function changePhoto(photoElement) {
-            const fileInput = photoElement.querySelector('input[type="file"]');
-            fileInput.click();
-        }
-
-        function handlePhotoUpload(input) {
-            const file = input.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const photoElement = input.parentNode;
-                    photoElement.innerHTML = `
-                        <input type="file" accept="image/*" onchange="handlePhotoUpload(this)">
-                        <img src="${e.target.result}" alt="Foto do funcionário">
-                    `;
-                };
-                reader.readAsDataURL(file);
-            }
-        }
-
-        function deleteEmployee(button) {
-            if (confirm('Tem certeza que deseja excluir este funcionário?')) {
-                const employee = button.closest('.employee');
-                employee.remove();
-                updateStats();
-            }
-        }
-
-        function addDepartment() {
-            departmentCounter++;
-            const departmentsContainer = document.getElementById('departmentsContainer');
-            const newDepartment = document.createElement('div');
-            newDepartment.className = 'department';
-            newDepartment.setAttribute('data-department', `department-${departmentCounter}`);
-            newDepartment.innerHTML = `
-                <div class="department-title" onclick="editDepartmentTitle(this)">📁 Novo Departamento</div>
-                <div class="employee-list"></div>
-            `;
-            
-            departmentsContainer.appendChild(newDepartment);
-            addDepartmentEventListeners(newDepartment);
-            updateStats();
-        }
-
-        function resetAll() {
-            if (confirm('Tem certeza que deseja resetar tudo? Esta ação não pode ser desfeita.')) {
-                // Mover todos os funcionários de volta para o pool
-                const allEmployees = document.querySelectorAll('.employee-list .employee');
-                const employeePool = document.getElementById('employeePool');
-                
-                allEmployees.forEach(employee => {
-                    employeePool.appendChild(employee);
-                });
-                
-                updateStats();
-            }
-        }
-
-        function openAddEmployeeModal() {
-            document.getElementById('addEmployeeModal').style.display = 'block';
-        }
-
-        function closeModal() {
-            document.getElementById('addEmployeeModal').style.display = 'none';
-            // Limpar campos
-            document.getElementById('employeeName').value = '';
-            document.getElementById('employeeRole').value = '';
-            document.getElementById('employeePhoto').value = '';
-        }
-
-        function addEmployee() {
-            const name = document.getElementById('employeeName').value.trim();
-            const role = document.getElementById('employeeRole').value.trim();
-            const photoFile = document.getElementById('employeePhoto').files[0];
-            
-            if (!name || !role) {
-                alert('Por favor, preencha nome e cargo do funcionário.');
+// Edição de título de departamento
+function editDeptTitle(id) {
+    const dep = data.departments.find(d => d.id === id);
+    if (!dep) return;
+    const deptsDiv = document.getElementById('departments');
+    const deptDiv = Array.from(deptsDiv.children).find(div =>
+        div.querySelector('.department-title span')?.textContent === dep.name
+    );
+    if (!deptDiv) return;
+    const span = deptDiv.querySelector('.department-title span');
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.value = dep.name;
+    input.style.fontSize = '1em';
+    input.onblur = () => {
+        dep.name = input.value || 'Departamento';
+        saveData(); refreshAll();
+    };
+    input.onkeydown = e => {
+        if (e.key === 'Enter') input.blur();
+        if (e.key === 'Escape') {`
+
