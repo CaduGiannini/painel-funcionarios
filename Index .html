@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <title>Organograma Interativo - Painel de Funcionários</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -18,6 +21,20 @@
             border-radius: 10px;
             box-shadow: 0 0 20px #0002;
             padding: 32px;
+        }
+        .status-bar {
+            background: #e74c3c;
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        .status-bar.connected {
+            background: #27ae60;
+        }
+        .status-bar.error {
+            background: #e74c3c;
         }
         .actions, .main-title {
             display: flex;
@@ -151,7 +168,7 @@
             transform: scale(1.02);
         }
 
-        /* Modal Styles - CORRIGIDO */
+        /* Modal Styles */
         .modal {
             display: none;
             position: fixed;
@@ -273,6 +290,11 @@
 </head>
 <body>
 <div class="container">
+    <!-- Status de Conexão -->
+    <div id="statusBar" class="status-bar">
+        <span id="statusText">Conectando ao Firebase...</span>
+    </div>
+
     <div class="actions">
         <form class="add-form" id="addEmployeeForm" style="display:flex;align-items:center;gap:8px;">
             <input type="text" id="employeeName" placeholder="Nome do Funcionário" required>
@@ -285,6 +307,7 @@
         <button class="btn" onclick="addDepartment()">➕ Departamento</button>
         <button class="btn" onclick="resetAll()">🔄 Resetar</button>
         <button class="btn" onclick="exportData()">💾 Exportar</button>
+        <button class="btn" onclick="testConnection()">🔧 Testar Conexão</button>
     </div>
     <div class="main-title">
         <h1 id="mainTitle" onclick="editTitle('mainTitle')">🏢 Painel de Funcionários</h1>
@@ -375,7 +398,61 @@
 </div>
 
 <script>
-// Dados locais (sem Firebase)
+/* 
+INSTRUÇÕES PARA CONFIGURAR O FIREBASE:
+
+1. Substitua as configurações abaixo pelas suas:
+   - Vá para https://console.firebase.google.com/
+   - Selecione seu projeto
+   - Vá em "Configurações do projeto" > "Geral"
+   - Role até "Seus apps" e copie a configuração
+
+2. Configure as regras do Realtime Database:
+   - Vá para "Realtime Database" > "Regras"
+   - Para TESTE, use estas regras (INSEGURAS):
+   {
+     "rules": {
+       ".read": true,
+       ".write": true
+     }
+   }
+   
+   - Para PRODUÇÃO, use regras mais seguras:
+   {
+     "rules": {
+       ".read": "auth != null",
+       ".write": "auth != null"
+     }
+   }
+*/
+
+const firebaseConfig = {
+    // SUBSTITUA ESTAS CONFIGURAÇÕES PELAS SUAS:
+    apiKey: "AIzaSyDJrlB1Cf8wNNGUfVIPqsDY3LYSpA5Scrw",
+    authDomain: "organograma-c9d08.firebaseapp.com",
+    databaseURL: "https://organograma-c9d08-default-rtdb.firebaseio.com/",
+    projectId: "organograma-c9d08",
+    storageBucket: "organograma-c9d08.appspot.com",
+    messagingSenderId: "43858988878",
+    appId: "1:43858988878:web:abc123def456"
+};
+
+// Inicializar Firebase com tratamento de erro
+let db = null;
+let isFirebaseConnected = false;
+
+try {
+    firebase.initializeApp(firebaseConfig);
+    db = firebase.database();
+    console.log('Firebase inicializado com sucesso');
+    updateStatus('Conectando ao Firebase...', 'connecting');
+} catch (error) {
+    console.error('Erro ao inicializar Firebase:', error);
+    updateStatus('Erro na configuração do Firebase: ' + error.message, 'error');
+}
+
+const dataPath = 'painelFuncionarios';
+
 let data = {
     title: '🏢 Painel de Funcionários',
     subtitle: 'Arraste e solte os funcionários nos departamentos',
@@ -384,23 +461,113 @@ let data = {
     departments: []
 };
 
+let isSaving = false;
 let currentEditingEmployee = null;
 let currentEditingDepartment = null;
 let draggedElement = null;
 let draggedType = null;
 
-// Salvar dados no localStorage
-function saveData() {
-    localStorage.setItem('organogramaData', JSON.stringify(data));
+// Função para atualizar status de conexão
+function updateStatus(message, type) {
+    const statusBar = document.getElementById('statusBar');
+    const statusText = document.getElementById('statusText');
+    
+    statusText.textContent = message;
+    statusBar.className = 'status-bar ' + type;
+    statusBar.style.display = 'block';
+    
+    if (type === 'connected') {
+        setTimeout(() => {
+            statusBar.style.display = 'none';
+        }, 3000);
+    }
 }
 
-// Carregar dados do localStorage
-function loadData() {
-    const saved = localStorage.getItem('organogramaData');
-    if (saved) {
-        data = JSON.parse(saved);
+// Função para testar conexão
+function testConnection() {
+    if (!db) {
+        updateStatus('Firebase não inicializado. Verifique a configuração.', 'error');
+        return;
     }
-    refreshAll();
+    
+    updateStatus('Testando conexão...', 'connecting');
+    
+    // Teste simples de leitura
+    db.ref('.info/connected').once('value', (snapshot) => {
+        if (snapshot.val() === true) {
+            updateStatus('Conexão com Firebase OK!', 'connected');
+            isFirebaseConnected = true;
+        } else {
+            updateStatus('Sem conexão com Firebase', 'error');
+            isFirebaseConnected = false;
+        }
+    }).catch((error) => {
+        console.error('Erro ao testar conexão:', error);
+        updateStatus('Erro de conexão: ' + error.message, 'error');
+        isFirebaseConnected = false;
+    });
+}
+
+// Carregar e escutar mudanças em tempo real
+function initializeFirebaseListener() {
+    if (!db) return;
+    
+    db.ref(dataPath).on('value', (snap) => {
+        try {
+            if (snap.exists()) {
+                data = snap.val();
+                // Garantir que arrays existam
+                if (!data.employees) data.employees = [];
+                if (!data.departments) data.departments = [];
+                console.log('Dados carregados do Firebase:', data);
+                updateStatus('Dados sincronizados com Firebase', 'connected');
+                isFirebaseConnected = true;
+            } else {
+                console.log('Nenhum dado encontrado no Firebase');
+                updateStatus('Nenhum dado encontrado no Firebase', 'connected');
+                isFirebaseConnected = true;
+            }
+            refreshAll();
+        } catch (error) {
+            console.error('Erro ao processar dados do Firebase:', error);
+            updateStatus('Erro ao processar dados: ' + error.message, 'error');
+        }
+    }, (error) => {
+        console.error('Erro no listener do Firebase:', error);
+        updateStatus('Erro de permissão: ' + error.message, 'error');
+        isFirebaseConnected = false;
+        
+        // Sugerir soluções
+        if (error.code === 'PERMISSION_DENIED') {
+            updateStatus('ERRO: Permissão negada. Verifique as regras do Firebase.', 'error');
+        }
+    });
+}
+
+function saveData() {
+    if (isSaving || !db || !isFirebaseConnected) {
+        console.log('Não é possível salvar:', { isSaving, hasDb: !!db, isConnected: isFirebaseConnected });
+        return;
+    }
+    
+    isSaving = true;
+    updateStatus('Salvando dados...', 'connecting');
+    
+    db.ref(dataPath).set(data)
+        .then(() => {
+            console.log('Dados salvos com sucesso no Firebase');
+            updateStatus('Dados salvos com sucesso!', 'connected');
+            isSaving = false;
+        })
+        .catch((error) => {
+            console.error('Erro ao salvar dados:', error);
+            updateStatus('Erro ao salvar: ' + error.message, 'error');
+            isSaving = false;
+            
+            if (error.code === 'PERMISSION_DENIED') {
+                updateStatus('ERRO: Sem permissão para salvar. Verifique as regras do Firebase.', 'error');
+            }
+        });
 }
 
 function refreshAll() {
@@ -508,7 +675,7 @@ function renderEmployee(emp) {
     return div;
 }
 
-// Modal Functions - CORRIGIDAS
+// Modal Functions
 function openEmployeeModal(empId) {
     console.log('Abrindo modal do funcionário:', empId);
     currentEditingEmployee = data.employees.find(e => e.id == empId);
@@ -771,15 +938,15 @@ function removeDepartment(depId) {
 // Resetar tudo
 function resetAll() {
     if (!confirm('Tem certeza? Isso apagará tudo!')) return;
-    localStorage.removeItem('organogramaData');
-    data = {
-        title: '🏢 Painel de Funcionários',
-        subtitle: 'Arraste e solte os funcionários nos departamentos',
-        employeeCounter: 0,
-        employees: [],
-        departments: []
-    };
-    refreshAll();
+    if (db && isFirebaseConnected) {
+        db.ref(dataPath).remove()
+            .then(() => {
+                updateStatus('Dados resetados com sucesso!', 'connected');
+            })
+            .catch((error) => {
+                updateStatus('Erro ao resetar: ' + error.message, 'error');
+            });
+    }
 }
 
 // Exportar dados
@@ -807,7 +974,12 @@ window.onclick = function(event) {
 // Inicialização
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Página carregada, inicializando...');
-    loadData();
+    
+    // Testar conexão automaticamente
+    setTimeout(() => {
+        testConnection();
+        initializeFirebaseListener();
+    }, 1000);
 });
 </script>
 </body>
