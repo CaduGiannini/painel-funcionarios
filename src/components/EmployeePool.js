@@ -25,7 +25,7 @@ const EmployeePool = ({
   const handleDrop = (e) => {
     e.preventDefault();
     setIsDragOver(false);
-    onDrop(e, null);
+    if (onDrop) onDrop(e, null);
   };
 
   return (
@@ -42,11 +42,11 @@ const EmployeePool = ({
         <Employee
           key={employee.id}
           employee={employee}
-          department={null}
+          departments={departments}
           onDragStart={onDragStart}
           onDragEnd={onDragEnd}
-          onEditEmployee={onEditEmployee}
-          onRemoveEmployee={onRemoveEmployee}
+          onEdit={onEditEmployee}
+          onRemove={onRemoveEmployee}
         />
       ))}
     </div>

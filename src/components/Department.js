@@ -30,9 +30,15 @@ const Department = ({
     const draggedId = e.dataTransfer.getData('text/plain');
     const draggedIdNum = parseInt(draggedId, 10);
     
+    if (!draggedId || isNaN(draggedIdNum)) {
+      setIsDragOver(false);
+      e.currentTarget.classList.remove('drop-hover');
+      return;
+    }
+    
     console.log('🏢 Drop no departamento:', department.name, 'ID arrastado:', draggedIdNum);
     
-    if (draggedIdNum && !isNaN(draggedIdNum) && onDrop) {
+    if (onDrop) {
       onDrop(draggedIdNum, department.id);
     }
   };

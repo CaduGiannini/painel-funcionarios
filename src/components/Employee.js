@@ -15,6 +15,17 @@ const Employee = ({
     e.target.classList.add('dragging');
     e.dataTransfer.setData('text/plain', employee.id.toString());
     e.dataTransfer.effectAllowed = 'move';
+    // Para Firefox: define um drag image customizado
+    if (e.dataTransfer.setDragImage) {
+      const crt = e.target.cloneNode(true);
+      crt.style.position = 'absolute';
+      crt.style.top = '-9999px';
+      crt.style.left = '-9999px';
+      crt.style.opacity = '0.8';
+      document.body.appendChild(crt);
+      e.dataTransfer.setDragImage(crt, 40, 40);
+      setTimeout(() => document.body.removeChild(crt), 0);
+    }
     if (onDragStart) onDragStart('employee', employee.id);
   };
 

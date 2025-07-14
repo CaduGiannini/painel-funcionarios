@@ -167,20 +167,23 @@ function App() {
       
       // Validação mais robusta para o departamento de destino
       let targetDeptIdNum = null;
-      if (targetDeptId && targetDeptId !== '' && targetDeptId !== 'null' && targetDeptId !== 'undefined') {
+      if (targetDeptId !== undefined && targetDeptId !== null && targetDeptId !== '' && targetDeptId !== 'null' && targetDeptId !== 'undefined') {
         const parsed = parseInt(targetDeptId, 10);
         if (!isNaN(parsed)) {
           targetDeptIdNum = parsed;
         }
       }
       
-      console.log('✅ Moving employee', draggedIdNum, 'to dept', targetDeptIdNum);
-      
       if (isNaN(draggedIdNum)) {
         console.error('❌ ID do funcionário inválido:', draggedId);
         return;
       }
-      
+      // Só atualiza se o funcionário existe
+      const exists = data.employees.some(emp => emp.id === draggedIdNum);
+      if (!exists) {
+        console.error('❌ Funcionário não encontrado:', draggedIdNum);
+        return;
+      }
       const newData = {
         ...data,
         employees: data.employees.map(emp => 
@@ -198,8 +201,6 @@ function App() {
     e.currentTarget.classList.remove('drop-hover');
     
     const draggedId = e.dataTransfer.getData('text/plain');
-    console.log('🏊 Pool drop:', draggedId);
-    
     if (draggedId && draggedType === 'employee') {
       handleDrop(draggedId, null);
     }
