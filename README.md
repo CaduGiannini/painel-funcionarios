@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel de Funcionários - Drag & Drop</title>
+    <title>Sistema de Gerenciamento de Funcionários</title>
     <style>
         * {
             margin: 0;
@@ -227,6 +227,13 @@
         }
 
         .employees {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+        }
+
+        .employee-list {
             display: flex;
             flex-wrap: wrap;
             gap: 15px;
@@ -522,8 +529,8 @@
                 <button class="btn" onclick="addDepartment()">➕ Departamento</button>
                 <button class="btn" onclick="resetAll()">🔄 Resetar</button>
             </div>
-            <h1 id="mainTitle" onclick="editTitle(this)">🏢 Painel de Funcionários</h1>
-            <p id="subtitle" onclick="editTitle(this)">Arraste e solte os funcionários nos departamentos</p>
+            <h1 onclick="editTitle(this)">🏢 Painel de Funcionários</h1>
+            <p onclick="editTitle(this)">Arraste e solte os funcionários nos departamentos</p>
         </div>
 
         <div class="main-content">
@@ -915,12 +922,3 @@
             
             if (!name || !role) {
                 alert('Por favor, preencha nome e cargo do funcionário.');
-                return;
-            }
-            
-            employeeCounter++;
-            const employeePool = document.getElementById('employeePool');
-            const newEmployee = document.createElement('div');
-            newEmployee.className = 'employee';
-            newEmployee.draggable = true;
-            newEmployee.setAttribute('data-id', employeeCounter)
