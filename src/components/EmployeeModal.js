@@ -1,6 +1,13 @@
 import React, { useState, useEffect } from 'react';
+import Modal from './Modal';
 
-const EmployeeModal = ({ employee, departments, onSave, onClose }) => {
+const EmployeeModal = ({ 
+  isOpen, 
+  onClose, 
+  employee, 
+  departments, 
+  onSave 
+}) => {
   const [formData, setFormData] = useState({
     name: '',
     role: '',
@@ -23,115 +30,122 @@ const EmployeeModal = ({ employee, departments, onSave, onClose }) => {
     }
   }, [employee]);
 
-  const handleChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSave(formData);
-  };
-
-  const handleBackdropClick = (e) => {
-    if (e.target === e.currentTarget) {
-      onClose();
+    if (!formData.name.trim() || !formData.role.trim()) {
+      alert('Nome e cargo são obrigatórios!');
+      return;
     }
+    
+    onSave({
+      ...employee,
+      ...formData,
+      name: formData.name.trim(),
+      role: formData.role.trim(),
+      email: formData.email.trim(),
+      phone: formData.phone.trim(),
+      notes: formData.notes.trim(),
+      dept: formData.dept || null
+    });
+    
+    onClose();
   };
-
-  useEffect(() => {
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = 'auto';
-    };
-  }, []);
 
   return (
-    <div className="modal show" onClick={handleBackdropClick}>
-      <div className="modal-content">
-        <span className="close" onClick={onClose}>&times;</span>
-        <div className="modal-header">
-          <h2>Editar Funcionário</h2>
+    <Modal isOpen={isOpen} onClose={onClose} title="Editar Funcionário">
+      <form onSubmit={handleSubmit}>
+        <div className="form-group">
+          <label htmlFor="name">Nome:</label>
+          <input
+            type="text"
+            id="name"
+            name="name"
+            value={formData.name}
+            onChange={handleChange}
+            required
+          />
         </div>
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label htmlFor="editEmployeeName">Nome:</label>
-            <input
-              type="text"
-              id="editEmployeeName"
-              value={formData.name}
-              onChange={(e) => handleChange('name', e.target.value)}
-              required
-            />
-          </div>
-          
-          <div className="form-group">
-            <label htmlFor="editEmployeeRole">Cargo:</label>
-            <input
-              type="text"
-              id="editEmployeeRole"
-              value={formData.role}
-              onChange={(e) => handleChange('role', e.target.value)}
-              required
-            />
-          </div>
-          
-          <div className="form-group">
-            <label htmlFor="editEmployeeEmail">Email:</label>
-            <input
-              type="email"
-              id="editEmployeeEmail"
-              value={formData.email}
-              onChange={(e) => handleChange('email', e.target.value)}
-            />
-          </div>
-          
-          <div className="form-group">
-            <label htmlFor="editEmployeePhone">Telefone:</label>
-            <input
-              type="tel"
-              id="editEmployeePhone"
-              value={formData.phone}
-              onChange={(e) => handleChange('phone', e.target.value)}
-            />
-          </div>
-          
-          <div className="form-group">
-            <label htmlFor="editEmployeeNotes">Observações:</label>
-            <textarea
-              id="editEmployeeNotes"
-              value={formData.notes}
-              onChange={(e) => handleChange('notes', e.target.value)}
-              placeholder="Informações adicionais sobre o funcionário"
-            />
-          </div>
-          
-          <div className="form-group">
-            <label htmlFor="editEmployeeDept">Departamento:</label>
-            <select
-              id="editEmployeeDept"
-              value={formData.dept}
-              onChange={(e) => handleChange('dept', e.target.value)}
-            >
-              <option value="">Pool</option>
-              {departments.map(dep => (
-                <option key={dep.id} value={dep.id}>
-                  {dep.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          
-          <div className="modal-actions">
-            <button type="button" className="btn-secondary" onClick={onClose}>
-              Cancelar
-            </button>
-            <button type="submit" className="btn">
-              Salvar
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        
+        <div className="form-group">
+          <label htmlFor="role">Cargo:</label>
+          <input
+            type="text"
+            id="role"
+            name="role"
+            value={formData.role}
+            onChange={handleChange}
+            required
+          />
+        </div>
+        
+        <div className="form-group">
+          <label htmlFor="email">Email:</label>
+          <input
+            type="email"
+            id="email"
+            name="email"
+            value={formData.email}
+            onChange={handleChange}
+          />
+        </div>
+        
+        <div className="form-group">
+          <label htmlFor="phone">Telefone:</label>
+          <input
+            type="tel"
+            id="phone"
+            name="phone"
+            value={formData.phone}
+            onChange={handleChange}
+          />
+        </div>
+        
+        <div className="form-group">
+          <label htmlFor="notes">Observações:</label>
+          <textarea
+            id="notes"
+            name="notes"
+            value={formData.notes}
+            onChange={handleChange}
+            placeholder="Informações adicionais sobre o funcionário"
+          />
+        </div>
+        
+        <div className="form-group">
+          <label htmlFor="dept">Departamento:</label>
+          <select
+            id="dept"
+            name="dept"
+            value={formData.dept}
+            onChange={handleChange}
+          >
+            <option value="">Pool</option>
+            {departments.map(dep => (
+              <option key={dep.id} value={dep.id}>
+                {dep.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        
+        <div className="modal-actions">
+          <button type="button" className="btn-secondary" onClick={onClose}>
+            Cancelar
+          </button>
+          <button type="submit" className="btn">
+            Salvar
+          </button>
+        </div>
+      </form>
+    </Modal>
   );
 };
 

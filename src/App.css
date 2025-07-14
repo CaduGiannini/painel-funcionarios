@@ -23,7 +23,7 @@ body {
   display: none;
 }
 
-.status-bar.visible {
+.status-bar.show {
   display: block;
 }
 
@@ -50,11 +50,6 @@ body {
 .main-title h1, .main-title p {
   margin: 0;
   cursor: pointer;
-}
-
-.main-title p {
-  margin-left: 18px;
-  font-size: 1.05em;
 }
 
 .employee-list, .departments {
@@ -166,10 +161,6 @@ body {
 .employee .remove-btn {
   margin-left: 8px;
   background: #c0392b;
-}
-
-.employee .edit-btn {
-  margin-left: 0;
 }
 
 .add-form {
@@ -310,25 +301,6 @@ body {
 
 .btn-secondary:hover {
   background: #5a6268;
-}
-
-.title-input {
-  font-size: 1.3em;
-  font-weight: bold;
-  border: 2px solid #667eea;
-  padding: 5px 8px;
-  border-radius: 4px;
-  width: auto;
-  min-width: 200px;
-}
-
-.subtitle-input {
-  font-size: 1.05em;
-  border: 2px solid #667eea;
-  padding: 5px 8px;
-  border-radius: 4px;
-  width: auto;
-  min-width: 200px;
 }
 
 /* Responsive Design */

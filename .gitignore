@@ -1,16 +1,16 @@
-# Dependencies
-node_modules/
+# Dependências
+/node_modules
 /.pnp
 .pnp.js
 
-# Testing
+# Arquivos de teste
 /coverage
 
-# Production
+# Build de produção
 /build
 
-# Misc
-.DS_Store
+# Arquivos de ambiente - NUNCA commitar
+.env
 .env.local
 .env.development.local
 .env.test.local
@@ -22,30 +22,28 @@ yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
 
-# Runtime data
-pids
-*.pid
-*.seed
-*.pid.lock
-
-# IDE
+# IDEs
 .vscode/
 .idea/
 *.swp
 *.swo
+*~
 
-# OS generated files
-Thumbs.db
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
 ehthumbs.db
+Thumbs.db
 
-# Firebase cache
-.firebase/
-firebase-debug.log
-firestore-debug.log
-
-# Environment variables
-.env
-
-# Backup files
-*.bak
+# Arquivos temporários
 *.tmp
+*.temp
+
+# ESLint cache
+.eslintcache
+
+# Arquivos de deploy local (gh-pages)
+.gh-pages/

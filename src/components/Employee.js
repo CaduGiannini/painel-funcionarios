@@ -2,50 +2,55 @@ import React from 'react';
 
 const Employee = ({ 
   employee, 
-  department, 
+  departments, 
   onDragStart, 
   onDragEnd, 
-  onEditEmployee, 
-  onRemoveEmployee 
+  onEdit, 
+  onRemove 
 }) => {
+  const dept = departments.find(d => d.id === employee.dept);
+  
   const handleDragStart = (e) => {
-    e.currentTarget.classList.add('dragging');
-    onDragStart(e, 'employee', employee.id);
+    e.target.classList.add('dragging');
+    e.dataTransfer.setData('text/plain', employee.id);
+    e.dataTransfer.effectAllowed = 'move';
+    if (onDragStart) onDragStart('employee', employee.id);
   };
 
   const handleDragEnd = (e) => {
-    e.currentTarget.classList.remove('dragging');
-    onDragEnd(e);
+    e.target.classList.remove('dragging');
+    if (onDragEnd) onDragEnd();
   };
 
-  const style = {};
-  if (department && department.color) {
-    style.background = `linear-gradient(135deg, ${department.color} 0%, ${department.color}CC 100%)`;
+  const employeeStyle = {};
+  if (dept && dept.color) {
+    employeeStyle.background = `linear-gradient(135deg, ${dept.color} 0%, ${dept.color}CC 100%)`;
   }
 
   return (
-    <div
+    <div 
       className="employee"
       draggable
+      data-id={employee.id}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
-      style={style}
+      style={employeeStyle}
     >
       <div>
         <div style={{ fontWeight: 'bold' }}>{employee.name}</div>
         <div style={{ opacity: 0.75, fontSize: '0.85em' }}>{employee.role}</div>
       </div>
       <div>
-        <button
-          className="edit-btn"
-          onClick={() => onEditEmployee(employee.id)}
+        <button 
+          className="edit-btn" 
+          onClick={() => onEdit(employee.id)}
           title="Editar funcionário"
         >
           ✏️
         </button>
-        <button
-          className="remove-btn"
-          onClick={() => onRemoveEmployee(employee.id)}
+        <button 
+          className="remove-btn" 
+          onClick={() => onRemove(employee.id)}
           title="Remover funcionário"
         >
           ✖
