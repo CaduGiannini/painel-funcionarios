@@ -4,9 +4,6 @@
     <meta charset="UTF-8">
     <title>Organograma Interativo - Painel de Funcionários</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -154,20 +151,19 @@
             transform: scale(1.02);
         }
 
-        /* Modal Styles */
+        /* Modal Styles - CORRIGIDO */
         .modal {
             display: none;
             position: fixed;
-            z-index: 1000;
+            z-index: 9999;
             left: 0;
             top: 0;
             width: 100%;
             height: 100%;
             background-color: rgba(0,0,0,0.5);
-            animation: fadeIn 0.3s ease;
         }
         .modal.show {
-            display: flex;
+            display: flex !important;
             align-items: center;
             justify-content: center;
         }
@@ -178,7 +174,9 @@
             box-shadow: 0 10px 30px rgba(0,0,0,0.3);
             width: 90%;
             max-width: 500px;
-            animation: slideIn 0.3s ease;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
         }
         .modal-header {
             display: flex;
@@ -198,6 +196,9 @@
             font-weight: bold;
             cursor: pointer;
             transition: color 0.3s ease;
+            position: absolute;
+            right: 15px;
+            top: 15px;
         }
         .close:hover {
             color: #000;
@@ -241,15 +242,6 @@
         }
         .btn-secondary:hover {
             background: #5a6268;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        @keyframes slideIn {
-            from { transform: translateY(-50px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
         }
 
         /* Responsive Design */
@@ -311,9 +303,9 @@
 <!-- Modal para Edição de Funcionário -->
 <div id="employeeModal" class="modal">
     <div class="modal-content">
+        <span class="close" onclick="closeModal('employeeModal')">&times;</span>
         <div class="modal-header">
             <h2>Editar Funcionário</h2>
-            <span class="close" onclick="closeModal('employeeModal')">&times;</span>
         </div>
         <form id="editEmployeeForm">
             <div class="form-group">
@@ -353,9 +345,9 @@
 <!-- Modal para Edição de Departamento -->
 <div id="departmentModal" class="modal">
     <div class="modal-content">
+        <span class="close" onclick="closeModal('departmentModal')">&times;</span>
         <div class="modal-header">
             <h2>Editar Departamento</h2>
-            <span class="close" onclick="closeModal('departmentModal')">&times;</span>
         </div>
         <form id="editDepartmentForm">
             <div class="form-group">
@@ -383,20 +375,7 @@
 </div>
 
 <script>
-/* CONFIGURAÇÃO DO SEU FIREBASE */
-const firebaseConfig = {
-    apiKey: "AIzaSyCurdZZRC1_vxgvTvHAJg-M_fRLW14-n8A",
-    authDomain: "organograma-c9d08.firebaseapp.com",
-    databaseURL: "https://organograma-c9d08.firebaseio.com",
-    projectId: "organograma-c9d08",
-    storageBucket: "organograma-c9d08.appspot.com",
-    messagingSenderId: "43858988878",
-    appId: "1:43858988878:web:abc123def456"
-};
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-const dataPath = 'painelFuncionarios';
-
+// Dados locais (sem Firebase)
 let data = {
     title: '🏢 Painel de Funcionários',
     subtitle: 'Arraste e solte os funcionários nos departamentos',
@@ -405,29 +384,23 @@ let data = {
     departments: []
 };
 
-let isSaving = false;
 let currentEditingEmployee = null;
 let currentEditingDepartment = null;
 let draggedElement = null;
-let draggedType = null; // 'employee' ou 'department'
+let draggedType = null;
 
-// Carregar e escutar mudanças em tempo real
-db.ref(dataPath).on('value', snap => {
-    if (snap.exists()) {
-        data = snap.val();
-        // Garantir que arrays existam
-        if (!data.employees) data.employees = [];
-        if (!data.departments) data.departments = [];
-        refreshAll();
-    }
-});
-
+// Salvar dados no localStorage
 function saveData() {
-    if (isSaving) return;
-    isSaving = true;
-    db.ref(dataPath).set(data, () => {
-        isSaving = false;
-    });
+    localStorage.setItem('organogramaData', JSON.stringify(data));
+}
+
+// Carregar dados do localStorage
+function loadData() {
+    const saved = localStorage.getItem('organogramaData');
+    if (saved) {
+        data = JSON.parse(saved);
+    }
+    refreshAll();
 }
 
 function refreshAll() {
@@ -438,14 +411,16 @@ function refreshAll() {
     const deptSelects = ['employeeDept', 'editEmployeeDept'];
     deptSelects.forEach(selectId => {
         const deptSelect = document.getElementById(selectId);
-        deptSelect.innerHTML = '<option value="">Pool</option>';
-        if (data.departments && data.departments.length > 0) {
-            data.departments.forEach(dep => {
-                const opt = document.createElement('option');
-                opt.value = dep.id;
-                opt.textContent = dep.name;
-                deptSelect.appendChild(opt);
-            });
+        if (deptSelect) {
+            deptSelect.innerHTML = '<option value="">Pool</option>';
+            if (data.departments && data.departments.length > 0) {
+                data.departments.forEach(dep => {
+                    const opt = document.createElement('option');
+                    opt.value = dep.id;
+                    opt.textContent = dep.name;
+                    deptSelect.appendChild(opt);
+                });
+            }
         }
     });
     
@@ -533,10 +508,14 @@ function renderEmployee(emp) {
     return div;
 }
 
-// Modal Functions
+// Modal Functions - CORRIGIDAS
 function openEmployeeModal(empId) {
+    console.log('Abrindo modal do funcionário:', empId);
     currentEditingEmployee = data.employees.find(e => e.id == empId);
-    if (!currentEditingEmployee) return;
+    if (!currentEditingEmployee) {
+        console.error('Funcionário não encontrado:', empId);
+        return;
+    }
     
     document.getElementById('editEmployeeName').value = currentEditingEmployee.name || '';
     document.getElementById('editEmployeeRole').value = currentEditingEmployee.role || '';
@@ -549,8 +528,12 @@ function openEmployeeModal(empId) {
 }
 
 function openDepartmentModal(deptId) {
+    console.log('Abrindo modal do departamento:', deptId);
     currentEditingDepartment = data.departments.find(d => d.id === deptId);
-    if (!currentEditingDepartment) return;
+    if (!currentEditingDepartment) {
+        console.error('Departamento não encontrado:', deptId);
+        return;
+    }
     
     document.getElementById('editDepartmentName').value = currentEditingDepartment.name || '';
     document.getElementById('editDepartmentManager').value = currentEditingDepartment.manager || '';
@@ -561,15 +544,26 @@ function openDepartmentModal(deptId) {
 }
 
 function showModal(modalId) {
-    document.getElementById(modalId).classList.add('show');
-    document.body.style.overflow = 'hidden';
+    console.log('Mostrando modal:', modalId);
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.classList.add('show');
+        document.body.style.overflow = 'hidden';
+        console.log('Modal exibido com sucesso');
+    } else {
+        console.error('Modal não encontrado:', modalId);
+    }
 }
 
 function closeModal(modalId) {
-    document.getElementById(modalId).classList.remove('show');
-    document.body.style.overflow = 'auto';
-    currentEditingEmployee = null;
-    currentEditingDepartment = null;
+    console.log('Fechando modal:', modalId);
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.classList.remove('show');
+        document.body.style.overflow = 'auto';
+        currentEditingEmployee = null;
+        currentEditingDepartment = null;
+    }
 }
 
 // Form Handlers
@@ -706,10 +700,8 @@ function onDrop(e, deptId) {
             refreshAll();
         }
     } else if (draggedType === 'department' && deptId === null) {
-        // Permitir reordenar departamentos apenas no pool
         const draggedDept = data.departments.find(d => d.id === draggedId);
         if (draggedDept) {
-            // Reordenar departamentos (mover para o final)
             data.departments = data.departments.filter(d => d.id !== draggedId);
             data.departments.push(draggedDept);
             saveData();
@@ -779,7 +771,15 @@ function removeDepartment(depId) {
 // Resetar tudo
 function resetAll() {
     if (!confirm('Tem certeza? Isso apagará tudo!')) return;
-    db.ref(dataPath).remove();
+    localStorage.removeItem('organogramaData');
+    data = {
+        title: '🏢 Painel de Funcionários',
+        subtitle: 'Arraste e solte os funcionários nos departamentos',
+        employeeCounter: 0,
+        employees: [],
+        departments: []
+    };
+    refreshAll();
 }
 
 // Exportar dados
@@ -806,7 +806,8 @@ window.onclick = function(event) {
 
 // Inicialização
 document.addEventListener('DOMContentLoaded', function() {
-    // O listener do Firebase já faz o refreshAll inicial
+    console.log('Página carregada, inicializando...');
+    loadData();
 });
 </script>
 </body>
